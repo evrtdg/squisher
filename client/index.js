@@ -2,11 +2,13 @@
 
 let username = window.localStorage?.username || '';
 let keys = {};
+let keytimes = {};
 let menu, game;
 /** @type {Array.<p5.Element>} */
 let menubtn;
 /** @type {p5.Element} */
 let menuuser;
+let textures = {};
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -14,6 +16,12 @@ function setup() {
   game = null;
   menubtn = [];
   switchmenu('menu');
+  textures.gun = loadImage('assets/gun.png');
+  textures.missing = loadImage('assets/gun.png');
+}
+
+function tex(n) {
+  return textures[n] || textures.missing;
 }
 
 function windowResized() {
@@ -34,7 +42,7 @@ function draw() {
 function initmenu() {
   menubtn.push(...[
     createButton('Classic mode').id('classic'),
-    createButton('Freaking mode').id('freak'),
+    createButton('Fighting mode').id('fight'),
   ]);
   createElement('div', 'Squisher').id('rainbow').parent('gms');
   menubtn.forEach(b => {
@@ -69,9 +77,36 @@ async function switchmenu(m, g) {
 }
 
 function keyPressed() {
-  keys[key.toLowerCase()] = true;
+  let k = key.toLowerCase();
+  keys[k] = true;
+  keytimes[k] = Date.now() - kloop;
+  if ((k == 'arrowdown' || k == 'mouseright') && player) {
+    holding = (holding + 1) % inventory.length;
+    updateinv();
+  }
 }
 
 function keyReleased() {
-  keys[key.toLowerCase()] = false;
+  let k = key.toLowerCase();
+  keys[k] = false;
+}
+
+function mouseMoved() {
+  let x = createVector(mouseX, mouseY).sub(windowWidth * .5, windowHeight * .5).heading();
+  if (player) player.rotation = x;
+}
+
+function mouseDragged() {
+  let x = createVector(mouseX, mouseY).sub(windowWidth * .5, windowHeight * .5).heading();
+  if (player) player.rotation = x;
+}
+
+function mousePressed() {
+  key = 'mouse' + mouseButton;
+  keyPressed();
+}
+
+function mouseReleased() {
+  key = 'mouse' + mouseButton;
+  keyReleased();
 }
