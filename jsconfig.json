@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    "types": ["p5/global"],
+  },
+  "include": ["client/*"]
+}
