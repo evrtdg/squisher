@@ -34,7 +34,7 @@ function draw() {
 function initmenu() {
   menubtn.push(...[
     createButton('Classic mode').id('classic'),
-    createButton('Shitting mode').id('shit'),
+    createButton('Freaking mode').id('freak'),
   ]);
   createElement('div', 'Squisher').id('rainbow').parent('gms');
   menubtn.forEach(b => {

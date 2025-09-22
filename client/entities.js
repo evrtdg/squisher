@@ -14,7 +14,7 @@ class Entity {
   draw() {
     push();
     translate(this.pos);
-    fill('#ff00000');
+    fill(255, 0, 0);
     stroke(0);
     strokeWeight(1);
     rect(0, 0, size);
