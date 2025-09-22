@@ -10,6 +10,7 @@ let mp = false;
 
 let inventory = [];
 let holding = 0;
+let points = 0;
 
 async function initgame() {
   entities = {};
@@ -37,7 +38,7 @@ function tickgame() {
   );
   player.pos.add(m);
   Object.values(entities).reverse().forEach(x => x.tick());
-  if (keys.arrowup || keys.mouseleft || keys.space) useitem();
+  if (keys.arrowup || keys.mouseleft || keys[' ']) useitem();
   if (keys.arrowleft && Date.now() - keytimes.arrowleft >= kloop) {
     keytimes.arrowleft = Date.now();
     player.rotation -= rotamt;
@@ -55,14 +56,31 @@ function drawgame() {
     entities[camera]?.pos : camera) || createVector();
   translate(cam.copy().mult(-1).add(
     createVector(windowWidth, windowHeight).mult(.5)));
+  drawmap();
   Object.values(entities).reverse().forEach(x => x.draw());
   if (game == 'classic') classicdraw();
   pop();
   drawhud();
 }
 
-function drawhud() {
+function drawmap() {
+  push();
+  noFill();
+  stroke(0);
+  strokeWeight(4);
+  rect(-wlmt, -wlmt, wlmt * 2, wlmt * 2)
+  pop();
+}
 
+function drawhud() {
+  push();
+  fill(255);
+  stroke(0);
+  strokeWeight(2);
+  textSize(16);
+  textAlign(LEFT, TOP);
+  text(`points: ${points}\nhealth: ${player.hp}`, 10, 10);
+  pop();
 }
 
 function updateinv() {

@@ -16,6 +16,7 @@ class Item extends Entity {
     if (hbox(player.pos, this.pos)) {
       if (mp) callEvent('delete', this.id);
       this.remove();
+      if (this.type == 'point') return points += this.amount;
       let y = false;
       inventory.forEach(x => {
         if (x[0] == this.type) {

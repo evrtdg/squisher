@@ -30,16 +30,6 @@ class Entity {
   }
 }
 
-const squishcolors = {
-  'player': ['#97E66C', '#805909'],
-  'basic': ['#ff0000', '#884400'],
-  'boss': [],
-  'super': [],
-  'hunter': [],
-  'omega': [],
-  'team': [], // teammate
-  'opp': [], // opposing team
-};
 class Squish extends Entity {
   constructor(id, type, x, y, data = {}) {
     super(id, type, x, y);
@@ -47,15 +37,40 @@ class Squish extends Entity {
     this.holding = data.holding || null;
     this.rotation = data.rotation || 0;
     this.cooldown = Date.now();
+    if (type == 'player' || type == 'team' || type == 'opp') {
+      this.player = true;
+    }
+    this.hp = {
+      player: 100,
+      basic: 25
+    }[type];
   }
 
   draw() {
     push();
     translate(this.pos);
-    fill(squishcolors[this.type][0]);
-    stroke(squishcolors[this.type][1]);
+    fill({
+      'player': '#97E66C',
+      'basic': '#ff0000',
+      'boss': '',
+      'super': '',
+      'hunter': '',
+      'omega': '',
+      'team': '', // teammate
+      'opp': '', // opposing team
+    }[this.type]);
+    stroke({
+      'player': '#805909',
+      'basic': '#884400',
+      'boss': '',
+      'super': '',
+      'hunter': '',
+      'omega': '',
+      'team': '', // teammate
+      'opp': '', // opposing team
+    }[this.type]);
     strokeWeight(6);
-    rect(size * -.5, size * -.5, size);
+    rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
     imageMode(CENTER);
     if (this.holding) {
       rotate(this.rotation);
@@ -64,8 +79,23 @@ class Squish extends Entity {
     pop();
   }
 
+  damage(x) {
+    this.hp -= x;
+    if (this.hp <= 0) {
+      if (!this.player) {
+        let p = Math.floor(Math.random() * {
+          basic: 5,
+        }[this.type]);
+        if (p) new Item(genid(), 'point', this.pos.x, this.pos.y, { amount: p });
+        this.remove();
+      } else {
+        this.dead = true;
+      }
+    }
+  }
+
   getdata() {
-    return { holding: this.holding, rotation: this.rotation };
+    return { holding: this.holding, rotation: this.rotation, hp: this.hp };
   }
 }
 classes.squish = Squish;
@@ -97,8 +127,16 @@ class Bullet extends Entity {
   }
 
   tick() {
-    let v = createVector(size * .5, 0).setHeading(this.rot);
+    let v = createVector(size * .75, 0).setHeading(this.rot);
     this.pos.add(v);
     if (Math.abs(this.pos.x) > wlmt || Math.abs(this.pos.y) > wlmt) this.remove();
+    Object.values(entities).forEach(e => {
+      if (!e.hp && e.id != this.from) return;
+      if (hbox(this.pos, e.pos)) {
+        e.damage({
+          basic: 10
+        }[this.type]);
+      }
+    });
   }
 }

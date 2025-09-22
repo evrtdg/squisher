@@ -16,8 +16,9 @@ function setup() {
   game = null;
   menubtn = [];
   switchmenu('menu');
-  textures.gun = loadImage('assets/gun.png');
-  textures.missing = loadImage('assets/gun.png');
+  textures.pistol = loadImage('assets/pistol.png');
+  textures.point = loadImage('assets/point.png');
+  textures.missing = loadImage('assets/missing.png');
 }
 
 function tex(n) {
