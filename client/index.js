@@ -10,6 +10,8 @@ let menubtn;
 let menuuser;
 let textures = {};
 
+let dt = 0;
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
   menu = null;
@@ -18,6 +20,9 @@ function setup() {
   switchmenu('menu');
   textures.pistol = loadImage('assets/pistol.png');
   textures.point = loadImage('assets/point.png');
+  textures.ammo = loadImage('assets/ammo.png');
+  textures.map = loadImage('assets/map.svg');
+  textures.hp = loadImage('assets/hp.png');
   textures.missing = loadImage('assets/missing.png');
 }
 
@@ -35,6 +40,7 @@ function draw() {
     fill(255, 0, 0);
     rect(20, 20, 20);
   } else if (menu == 'game') {
+    dt = deltaTime;
     tickgame();
     drawgame();
   }
