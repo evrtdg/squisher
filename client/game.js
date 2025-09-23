@@ -6,6 +6,9 @@ let ylmt = 1200;
 let firstshot = true;
 let map = 'map';
 
+let powerammo = false;
+let pierceammo = false;
+
 let player = null;
 let camera = null;
 let multiplayer = {};
@@ -41,11 +44,6 @@ async function initgame() {
 }
 
 function tickgame() {
-  let m = createVector(
-    ((keys.d || false) - (keys.a || false)) * dt * speed,
-    ((keys.s || false) - (keys.w || false)) * dt * speed,
-  );
-  player.pos.add(m);
   Object.values(entities).reverse().forEach(x => x.tick());
   if (keys.arrowup || keys.mouseleft || keys[' ']) {
     useitem();
@@ -96,11 +94,13 @@ function drawhud() {
   pop();
 }
 
-function makebullet() {
-  if (mp) callEvent('shoot');
-  else {
+function makebullet(type = 'basic', spread = 0, amount = 1) {
+  // if (mp) callEvent('shoot');
+  // else {
+  for (let i = 0; i < amount; i++) {
     let v = createVector(size * 1.5, 0).setHeading(player.rotation).add(player.pos);
-    new Bullet(genid(), 'basic', v.x, v.y,
-      { from: player.id, rot: player.rotation });
+    new Bullet(genid(), type, v.x, v.y,
+      { from: player.id, rot: player.rotation - spread * .5 + Math.random() * spread });
   }
+  // }
 }

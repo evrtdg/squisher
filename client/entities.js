@@ -58,7 +58,12 @@ class Squish extends Entity {
   tick() {
     this.dispos.add(this.pos.copy().sub(this.dispos).mult(.6));
     if (player == this) {
-
+      let m = createVector(
+        ((keys.d || false) - (keys.a || false)) * dt * speed,
+        ((keys.s || false) - (keys.w || false)) * dt * speed,
+      );
+      if (bcoll(this.pos.copy().add(m.x, 0))) this.pos.add(m.x, 0);
+      if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
     }
     if (this.player) return;
     if (hbox(this.pos, player.pos)) {
@@ -69,9 +74,8 @@ class Squish extends Entity {
         }[this.type]);
       }
     } else {
-      this.pos.add(
-        (Math.random() - .5) * dt * .5,
-        (Math.random() - .5) * dt * .5);
+      let x = createVector((Math.random() - .5) * dt * .5, (Math.random() - .5) * dt * .5);
+      if (pcoll(this.pos.copy().add(x))) this.pos.add(x);
     }
   }
 
@@ -100,11 +104,12 @@ class Squish extends Entity {
     }[this.type]);
     strokeWeight(8);
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
-    imageMode(CENTER);
+    // imageMode(CENTER);
     if (this.holding) {
       push();
       rotate(this.rotation);
-      image(tex(this.holding), size * 1.5, 0, size * 1.5, size * 1.5);
+      image(tex(this.holding), size * .8, -size * .75,
+        tex(this.holding).width / tex(this.holding).height * size * 1.5, size * 1.5);
       pop();
     }
     if (this.hp < this.maxhp) {
@@ -194,14 +199,18 @@ class Bullet extends Entity {
   tick() {
     let v = createVector(size * .05 * dt, 0).setHeading(this.rot);
     this.pos.add(v);
-    if (Math.abs(this.pos.x) > xlmt || Math.abs(this.pos.y) > ylmt) this.remove();
+    if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
     Object.values(entities).forEach(e => {
       if (!e.hp || e.id == this.from) return;
       if (hbox(this.pos, e.pos, size * 1.5)) {
         e.damage({
-          basic: 15
+          pistol: 15,
+          shotgun: 5,
+          power: 25,
         }[this.type] + Math.floor(Math.random() * ({
-          basic: 5,
+          pistol: 5,
+          shotgun: 2,
+          power: 10,
         }[this.type] + 1)));
         this.remove();
       }

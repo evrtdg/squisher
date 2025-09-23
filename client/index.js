@@ -19,6 +19,7 @@ function setup() {
   menubtn = [];
   switchmenu('menu');
   textures.pistol = loadImage('assets/pistol.png');
+  textures.shotgun = loadImage('assets/shotgun.svg');
   textures.point = loadImage('assets/point.png');
   textures.ammo = loadImage('assets/ammo.png');
   textures.map = loadImage('assets/map.svg');

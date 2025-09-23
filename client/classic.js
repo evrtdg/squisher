@@ -1,4 +1,5 @@
 function classicinit() {
+  player.pos.x -= 50;
   new Squish(genid(), 'basic', 30, 30);
   new Item(genid(), 'pistol', -50, 50);
   new Item(genid(), 'ammo', -60, 50, { amount: 50 });

@@ -8,7 +8,8 @@ class Item extends Entity {
   draw() {
     push();
     translate(this.pos);
-    image(tex(this.type), 0, 0, size * 1.5, size * 1.5);
+    image(tex(this.type), 0, 0, 
+      tex(this.type).width / tex(this.type).height * size * 1.5, size * 1.5);
     pop();
   }
 
@@ -45,10 +46,15 @@ class Item extends Entity {
 classes.item = Item;
 
 function useitem() {
-  if (player.holding == 'pistol' && Date.now() - player.cooldown >= 250 && firstshot && ammo > 0) {
+  if (player.holding == 'pistol' && Date.now() - player.cooldown >= 250 && firstshot && ammo >= .5) {
     player.cooldown = Date.now();
-    makebullet(player.pos, player.rotation, player);
+    makebullet(powerammo ? 'power' : 'pistol', Math.PI * .05, 1);
     ammo -= .5;
+  }
+  if (player.holding == 'shotgun' && Date.now() - player.cooldown >= 1000 && firstshot && ammo >= 2) {
+    player.cooldown = Date.now();
+    makebullet(powerammo ? 'power' : 'shotgun', Math.PI * .15, 6);
+    ammo -= 1;
   }
   if (Date.now() - player.cooldown >= 250 && firstshot) {
     let d = false;
