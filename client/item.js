@@ -16,7 +16,11 @@ class Item extends Entity {
     if (hbox(player.pos, this.pos, size * 2)) {
       if (mp) callEvent('delete', this.id);
       this.remove();
-      if (this.type == 'point') return points += this.amount;
+      if (this.type == 'point') {
+        points += this.amount;
+        score += this.amount;
+        return;
+      }
       if (this.type == 'ammo') return ammo += this.amount;
       if (this.type == 'hp') return player.heal(this.amount);
       let y = false;
@@ -44,14 +48,14 @@ function useitem() {
   if (player.holding == 'pistol' && Date.now() - player.cooldown >= 250 && firstshot && ammo > 0) {
     player.cooldown = Date.now();
     makebullet(player.pos, player.rotation, player);
-    ammo -= .25;
+    ammo -= .5;
   }
   if (Date.now() - player.cooldown >= 250 && firstshot) {
     let d = false;
     Object.values(entities).forEach(e => {
       if (d || !e.hp || e == player) return;
-      if (hbox(player.pos, e.pos, size * 5)) {
-        player.cooldown = Date.now(); 
+      if (hbox(player.pos, e.pos, size * 3)) {
+        player.cooldown = Date.now();
         e.damage(10);
         d = true;
       }

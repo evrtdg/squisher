@@ -1,25 +1,24 @@
 let speed = .3;
 let kloop = 25;
 let rotamt = Math.PI * .1;
-let wlmt = 1200;
+let xlmt = 1200;
+let ylmt = 1200;
 let firstshot = true;
+let map = 'map';
 
 let player = null;
 let camera = null;
 let multiplayer = {};
 let mp = false;
 
-let inventory = [null];
+let inventory = [[null, 1]];
 let holding = 0;
 let points = 0;
 let ammo = 0;
+let score = 0;
 
 async function initgame() {
   entities = {};
-  inventory = [];
-  holding = 0;
-  points = 0;
-  ammo = 0;
   if (game == 'classic') {
     mp = false;
     player = new Squish(genid(), 'player', 0, 0);
@@ -31,7 +30,13 @@ async function initgame() {
     };
     mp = true;
   }
+  inventory = [[null, 1]];
+  holding = 0;
+  points = 0;
+  ammo = 0;
   camera = player.id;
+  xlmt = tex(map).width;
+  ylmt = tex(map).height;
   if (game == 'classic') classicinit();
 }
 
@@ -61,10 +66,10 @@ function drawgame() {
   push();
   let cam = (camera.constructor.name == 'String' ?
     entities[camera]?.pos : camera) || createVector();
-  translate(cam.copy().mult(-1).add(
-    createVector(windowWidth, windowHeight).mult(.5)));
+  cam = cam.copy().mult(-1).add(createVector(windowWidth, windowHeight).mult(.5));
+  translate(cam);
   drawmap();
-  Object.values(entities).reverse().forEach(x => x.draw());
+  Object.values(entities).filter(x => x.onscreen(cam)).reverse().forEach(x => x.draw());
   if (game == 'classic') classicdraw();
   pop();
   drawhud();
@@ -72,11 +77,11 @@ function drawgame() {
 
 function drawmap() {
   push();
-  image(tex('map'), -wlmt, -wlmt, wlmt * 2, wlmt * 2);
+  image(tex(map), -xlmt, -ylmt, xlmt * 2, ylmt * 2);
   noFill();
   stroke(0);
   strokeWeight(4);
-  rect(-wlmt, -wlmt, wlmt * 2, wlmt * 2);
+  rect(-xlmt, -ylmt, xlmt * 2, ylmt * 2);
   pop();
 }
 

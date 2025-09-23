@@ -26,6 +26,7 @@ function setup() {
   textures.missing = loadImage('assets/missing.png');
 }
 
+/** @returns {import("p5").Image} */
 function tex(n) {
   return textures[n] || textures.missing;
 }

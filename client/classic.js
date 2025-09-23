@@ -8,8 +8,8 @@ function classictick() {
   if (Math.random() < .01 && Object.values(entities).filter(x => 
     x.class == 'squish' && !x.player).length < 100) {
     new Squish(genid(), 'basic',
-      Math.random() * wlmt * 2 - wlmt,
-      Math.random() * wlmt * 2 - wlmt);
+      Math.random() * xlmt * 2 - xlmt,
+      Math.random() * ylmt * 2 - ylmt);
   }
 }
 

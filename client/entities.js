@@ -28,6 +28,12 @@ class Entity {
   remove() {
     delete entities[this.id];
   }
+
+  onscreen(c) {
+    let x = this.pos.copy().add(c);
+    return x.x > -size * 3 && x.x < windowWidth + size * 3 &&
+      x.y > -size * 3 && x.y < windowHeight + size * 3;
+  }
 }
 
 class Squish extends Entity {
@@ -46,8 +52,7 @@ class Squish extends Entity {
       basic: 25
     }[type];
     this.maxhp = this.hp;
-    if (this.player) this.maxhp = 150;
-    this.pdmgcd = 0;
+    this.bonushp = this.player ? 50 : 0;
   }
 
   tick() {
@@ -57,8 +62,8 @@ class Squish extends Entity {
     }
     if (this.player) return;
     if (hbox(this.pos, player.pos)) {
-      if (Date.now() - this.pdmgcd > 100) {
-        this.pdmgcd = Date.now();
+      if (Date.now() - this.cooldown > 100) {
+        this.cooldown = Date.now();
         player.damage({
           basic: Math.floor(Math.random() * 3) + 1
         }[this.type]);
@@ -97,8 +102,18 @@ class Squish extends Entity {
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
     imageMode(CENTER);
     if (this.holding) {
+      push();
       rotate(this.rotation);
       image(tex(this.holding), size * 1.5, 0, size * 1.5, size * 1.5);
+      pop();
+    }
+    if (this.hp < this.maxhp) {
+      noStroke();
+      fill(0);
+      rect(-size * .8, -size * 1.3, size * 1.6, size * .4);
+      fill(255, 0, 0);
+      rect(-size * .8, -size * 1.3, size * 1.6 *
+        (this.hp / this.maxhp), size * .4);
     }
     pop();
   }
@@ -141,7 +156,7 @@ class Squish extends Entity {
 
   heal(x) {
     this.hp += x;
-    if (this.hp > this.maxhp) this.hp = this.maxhp;
+    if (this.hp > this.maxhp + this.bonushp) this.hp = this.maxhp + this.bonushp;
   }
 
   getdata() {
@@ -179,7 +194,7 @@ class Bullet extends Entity {
   tick() {
     let v = createVector(size * .05 * dt, 0).setHeading(this.rot);
     this.pos.add(v);
-    if (Math.abs(this.pos.x) > wlmt || Math.abs(this.pos.y) > wlmt) this.remove();
+    if (Math.abs(this.pos.x) > xlmt || Math.abs(this.pos.y) > ylmt) this.remove();
     Object.values(entities).forEach(e => {
       if (!e.hp || e.id == this.from) return;
       if (hbox(this.pos, e.pos, size * 1.5)) {
