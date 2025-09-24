@@ -67,6 +67,8 @@ function useitem() {
       }
     });
   }
+  if (player.holding == 'mapper' && firstshot) 
+    console.log(Math.floor(player.pos.x) + ', ' + Math.floor(player.pos.y)); 
 }
 
 function updateinv() {

@@ -4,7 +4,16 @@ let rotamt = Math.PI * .1;
 let xlmt = 1200;
 let ylmt = 1200;
 let firstshot = true;
+
 let map = 'map';
+let spawn = {
+  map: {
+    enemy: [[357, -208, 438, -122], [418, 177, 448, 295],
+    [-599, 692, -254, 814], [-1163, -1037, -1006, -895]],
+    player: [[-1052, -86, -975, 65], [-1082, 965, -1001, 1057],
+    [1002, -87, 1063, -36]]
+  }
+}
 
 let powerammo = false;
 let pierceammo = false;

@@ -217,3 +217,12 @@ class Bullet extends Entity {
     });
   }
 }
+
+function spawnzone(t = 'enemy') {
+  let x = spawn.map[t];
+  x = x[Math.floor(Math.random() * x.length)];
+  return createVector(
+    Math.floor(Math.random() * (x[0] - x[2])) + x[2],
+    Math.floor(Math.random() * (x[1] - x[3])) + x[3],
+  );
+}
