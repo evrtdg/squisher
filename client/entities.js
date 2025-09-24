@@ -56,22 +56,24 @@ class Squish extends Entity {
   }
 
   tick() {
-    this.dispos.add(this.pos.copy().sub(this.dispos).mult(.6));
+    this.dispos.add(this.pos.copy().sub(this.dispos).mult(.5));
     if (player == this) {
-      let m = createVector(
-        ((keys.d || false) - (keys.a || false)) * dt * speed,
-        ((keys.s || false) - (keys.w || false)) * dt * speed,
-      );
-      if (bcoll(this.pos.copy().add(m.x, 0))) this.pos.add(m.x, 0);
-      if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
+      if (!this.dead) {
+        let m = createVector(
+          ((keys.d || false) - (keys.a || false)) * dt * speed,
+          ((keys.s || false) - (keys.w || false)) * dt * speed,
+        );
+        if (bcoll(this.pos.copy().add(m.x, 0))) this.pos.add(m.x, 0);
+        if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
+      }
     }
     if (this.player) return;
-    if (hbox(this.pos, player.pos)) {
+    if (hbox(this.pos, player.pos) && !player.dead) {
       if (Date.now() - this.cooldown > 100) {
         this.cooldown = Date.now();
         player.damage({
           basic: Math.floor(Math.random() * 3) + 1
-        }[this.type]);
+        }[this.type], this.id);
       }
     } else {
       let x = createVector((Math.random() - .5) * dt * .5, (Math.random() - .5) * dt * .5);
@@ -105,7 +107,7 @@ class Squish extends Entity {
     strokeWeight(8);
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
     // imageMode(CENTER);
-    if (this.holding) {
+    if (this.holding && !this.dead) {
       push();
       rotate(this.rotation);
       image(tex(this.holding), size * .8, -size * .75,
@@ -123,7 +125,7 @@ class Squish extends Entity {
     pop();
   }
 
-  damage(x) {
+  damage(x, f = null) {
     if (this.dead) return;
     this.hp -= x;
     if (this.hp <= 0) {
@@ -155,6 +157,7 @@ class Squish extends Entity {
         this.remove();
       } else {
         this.dead = true;
+        if (f) camera = f;
       }
     }
   }
@@ -197,9 +200,9 @@ class Bullet extends Entity {
   }
 
   tick() {
+    if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
     let v = createVector(size * .05 * dt, 0).setHeading(this.rot);
     this.pos.add(v);
-    if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
     Object.values(entities).forEach(e => {
       if (!e.hp || e.id == this.from) return;
       if (hbox(this.pos, e.pos, size * 1.5)) {
@@ -211,7 +214,7 @@ class Bullet extends Entity {
           pistol: 5,
           shotgun: 2,
           power: 10,
-        }[this.type] + 1)));
+        }[this.type] + 1)), this.from);
         this.remove();
       }
     });

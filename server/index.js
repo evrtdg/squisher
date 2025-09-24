@@ -1,8 +1,8 @@
 require('dotenv').config({ quiet: true });
 const static = new (require('node-static').Server)('./client');
 const server = require('http').createServer((req, res) => {
-  //if (process.env.DEV)
-  static.serve(req, res);
+  if (process.env.DEV)
+    static.serve(req, res);
 });
 const wss = new (require('ws').Server)({ server });
 wss.on('connection', ws => {
@@ -29,7 +29,7 @@ wss.on('connection', ws => {
         if (data.mode != 'fight') return;
         ws.mode = data.mode;
         wsname = data.name;
-        
+
         break;
     }
   })

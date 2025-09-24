@@ -1,8 +1,5 @@
 function classicinit() {
-  player.pos.set(spawnzone('player'));
-  new Squish(genid(), 'basic', 30, 30);
-  new Item(genid(), 'pistol', player.pos.x + 50, player.pos.y);
-  new Item(genid(), 'ammo', player.pos.x + 50, player.pos.y, { amount: 50 });
+  playerspawn();
 }
 
 function classictick() {

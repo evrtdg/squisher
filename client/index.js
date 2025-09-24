@@ -9,8 +9,11 @@ let menubtn;
 /** @type {p5.Element} */
 let menuuser;
 let textures = {};
+let sounds = {};
 
 let dt = 0;
+let tps = 30;
+let itps = 1000 / tps;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -25,11 +28,19 @@ function setup() {
   textures.map = loadImage('assets/map.svg');
   textures.hp = loadImage('assets/hp.png');
   textures.missing = loadImage('assets/missing.png');
+  sounds.missing = loadSound('assets/missing.mp3');
 }
 
 /** @returns {import("p5").Image} */
 function tex(n) {
   return textures[n] || textures.missing;
+}
+
+function play(n, v = .5) {
+  let s = sounds[n] || sounds.missing;
+  s.playMode('sustain');
+  s.setVolume(v);
+  s.play();
 }
 
 function windowResized() {
@@ -42,8 +53,12 @@ function draw() {
     fill(255, 0, 0);
     rect(20, 20, 20);
   } else if (menu == 'game') {
-    dt = deltaTime;
-    tickgame();
+    dt += deltaTime;
+    if (dt > itps) {
+      if (dt > 100) dt = 100;
+      tickgame();
+      dt = dt % itps;
+    }
     drawgame();
   }
 }
@@ -111,6 +126,7 @@ function mouseDragged() {
 }
 
 function mousePressed() {
+  if (player && player.dead) playerspawn();
   key = 'mouse' + mouseButton;
   keyPressed();
 }

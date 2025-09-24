@@ -62,7 +62,7 @@ function useitem() {
       if (d || !e.hp || e == player) return;
       if (hbox(player.pos, e.pos, size * 3)) {
         player.cooldown = Date.now();
-        e.damage(10);
+        e.damage(10, player.id);
         d = true;
       }
     });

@@ -72,7 +72,7 @@ function tickgame() {
 function drawgame() {
   push();
   let cam = (camera.constructor.name == 'String' ?
-    entities[camera]?.pos : camera) || createVector();
+    entities[camera]?.dispos || entities[camera]?.pos : camera) || createVector();
   cam = cam.copy().mult(-1).add(createVector(windowWidth, windowHeight).mult(.5));
   translate(cam);
   drawmap();
@@ -112,4 +112,27 @@ function makebullet(type = 'basic', spread = 0, amount = 1) {
       { from: player.id, rot: player.rotation - spread * .5 + Math.random() * spread });
   }
   // }
+}
+
+function playerspawn() {
+  inventory.forEach(x => {
+    if (x[0]) new Item(genid(), x[0],
+      player.pos.x + Math.random() * size - size * .5,
+      player.pos.y + Math.random() * size - size * .5,
+      { amount: x[1] })
+  });
+  if (ammo) new Item(genid(), 'ammo',
+    player.pos.x + Math.random() * size - size * .5,
+    player.pos.y + Math.random() * size - size * .5,
+    { amount: ammo })
+  player.dead = false;
+  player.hp = player.maxhp;
+  ammo = 0;
+  player.holding = null;
+  inventory = [[null, 1]];
+  camera = player.id;
+  updateinv();
+  player.pos.set(spawnzone('player'));
+  new Item(genid(), 'pistol', player.pos.x + 50, player.pos.y);
+  new Item(genid(), 'ammo', player.pos.x + 50, player.pos.y, { amount: 20 });
 }
