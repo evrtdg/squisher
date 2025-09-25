@@ -175,7 +175,7 @@ class Squish extends Entity {
           this.pos.y + Math.random() * size - size * .5, { amount: h });
         this.remove();
       } else {
-        this.dead = true;
+        playerdeath();
         if (f) camera = f;
       }
     }
@@ -219,7 +219,7 @@ class Bullet extends Entity {
   tick() {
     for (let i = 0; i < 2; i++) {
       this.pos.add(createVector(size * .05 * dt * .5, 0).setHeading(this.rot));
-      if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
+      if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) return this.remove();
     }
     Object.values(entities).forEach(e => {
       if (!e.hp || e.id == this.from) return;
@@ -302,5 +302,13 @@ class Flame extends Entity {
     let x = this.pos.copy().add(c);
     return x.x > -this.size * .5 && x.x < windowWidth + this.size * .5 &&
       x.y > -this.size * .5 && x.y < windowHeight + this.size * .5;
+  }
+}
+
+class Bomb extends Entity {
+  constructor(id, type, x, y, data) {
+    super(id, type, x, y);
+    this.class = "Bomb";
+    this.from = data.from;
   }
 }

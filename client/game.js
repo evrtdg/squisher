@@ -123,6 +123,18 @@ function makebullet(type = 'basic', spread = 0, amount = 1) {
 }
 
 function playerspawn() {
+  player.dead = false;
+  player.hp = player.maxhp;
+  player.holding = null;
+  camera = player.id;
+  updateinv();
+  player.pos.set(spawnzone('player'));
+  new Item(genid(), 'pistol', player.pos.x + 50, player.pos.y);
+  new Item(genid(), 'ammo', player.pos.x + 50, player.pos.y, { amount: 20 });
+}
+
+function playerdeath() {
+  player.dead = true;
   inventory.forEach(x => {
     if (x[0]) new Item(genid(), x[0],
       player.pos.x + Math.random() * size - size * .5,
@@ -132,27 +144,24 @@ function playerspawn() {
   if (ammo) new Item(genid(), 'ammo',
     player.pos.x + Math.random() * size - size * .5,
     player.pos.y + Math.random() * size - size * .5,
-    { amount: ammo })
-  player.dead = false;
-  player.hp = player.maxhp;
-  ammo = 0;
-  player.holding = null;
+    { amount: ammo });
   inventory = [[null, 1]];
-  camera = player.id;
+  ammo = 0;
   updateinv();
-  player.pos.set(spawnzone('player'));
-  new Item(genid(), 'pistol', player.pos.x + 50, player.pos.y);
-  new Item(genid(), 'ammo', player.pos.x + 50, player.pos.y, { amount: 20 });
 }
 
 function cheats() {
   // give('mapper');
   give('machinegun');
+  give('goldenmachine');
   give('shotgun');
+  give('goldenshot');
   give('flamethrower');
+  give('bomb', 50);
   powerammo = true;
   pierceammo = true;
   itemmagnet = true;
   ammo = 1000;
   player.hp = 1000;
+  player.onfire = 0;
 }

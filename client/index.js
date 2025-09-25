@@ -23,10 +23,16 @@ function setup() {
   textures.pistol = loadImage('assets/pistol.png');
   textures.shotgun = loadImage('assets/shotgun.svg');
   textures.shotgun.size = 2;
+  textures.goldenshot = loadImage('assets/goldenshot.svg');
+  textures.goldenshot.size = 2;
   textures.machinegun = loadImage('assets/machinegun.svg');
   textures.machinegun.size = 2;
+  textures.goldenmachine = loadImage('assets/goldenmachine.svg');
+  textures.goldenmachine.size = 2;
   textures.flamethrower = loadImage('assets/flamethrower.svg');
   textures.flamethrower.size = 2;
+  textures.bomb = loadImage('assets/bomb.svg');
+  textures.whitebomb = loadImage('assets/whitebomb.svg');
   textures.point = loadImage('assets/point.png');
   textures.ammo = loadImage('assets/ammo.png');
   textures.map = loadImage('assets/map.svg');

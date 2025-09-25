@@ -14,9 +14,9 @@ class Item extends Entity {
   }
 
   tick() {
-    if (itemmagnet && hbox(this.pos, player.pos, size * 8)) 
+    if (itemmagnet && hbox(this.pos, player.pos, size * 8))
       this.pos.add(player.pos.copy().sub(this.pos).setMag(5000 / player.pos.copy().sub(this.pos).magSq()));
-    if (hbox(player.pos, this.pos, size * 2)) {
+    if (hbox(player.pos, this.pos, size * 2) && !player.dead) {
       if (mp) callEvent('delete', this.id);
       this.remove();
       if (this.type == 'point') {
@@ -59,13 +59,23 @@ function useitem() {
   }
   if (player.holding == 'shotgun' && Date.now() - player.cooldown >= 1000 && firstshot && ammo >= 1) {
     player.cooldown = Date.now();
-    makebullet(powerammo ? [25] : [5, 2], Math.PI * .15, 6);
+    makebullet(powerammo ? [15] : [6, 3], Math.PI * .15, 6);
     ammo -= 1;
+  }
+  if (player.holding == 'goldenshot' && Date.now() - player.cooldown >= 250 && firstshot && ammo >= .5) {
+    player.cooldown = Date.now();
+    makebullet(powerammo ? [35] : [25], Math.PI * .1, 8);
+    ammo -= .5;
   }
   if (player.holding == 'machinegun' && Date.now() - player.cooldown >= 75 && ammo >= .2) {
     player.cooldown = Date.now();
     makebullet(powerammo ? [15] : [7, 5], Math.PI * .075, 1);
     ammo -= .2;
+  }
+  if (player.holding == 'goldenmachine' && Date.now() - player.cooldown >= 50 && ammo >= .1) {
+    player.cooldown = Date.now();
+    makebullet(powerammo ? [35] : [25], Math.PI * .025, 1);
+    ammo -= .1;
   }
   if (player.holding == 'flamethrower' && Date.now() - player.cooldown >= 150 && ammo >= 1.5) {
     player.cooldown = Date.now();
