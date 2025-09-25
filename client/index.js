@@ -12,7 +12,7 @@ let textures = {};
 let sounds = {};
 
 let dt = 0;
-let tps = 30;
+let tps = 45;
 let itps = 1000 / tps;
 
 function setup() {
@@ -20,15 +20,20 @@ function setup() {
   menu = null;
   game = null;
   menubtn = [];
-  switchmenu('menu');
   textures.pistol = loadImage('assets/pistol.png');
   textures.shotgun = loadImage('assets/shotgun.svg');
+  textures.shotgun.size = 2;
+  textures.machinegun = loadImage('assets/machinegun.svg');
+  textures.machinegun.size = 2;
+  textures.flamethrower = loadImage('assets/flamethrower.svg');
+  textures.flamethrower.size = 2;
   textures.point = loadImage('assets/point.png');
   textures.ammo = loadImage('assets/ammo.png');
   textures.map = loadImage('assets/map.svg');
   textures.hp = loadImage('assets/hp.png');
   textures.missing = loadImage('assets/missing.png');
   sounds.missing = loadSound('assets/missing.mp3');
+  switchmenu('menu');
 }
 
 /** @returns {import("p5").Image} */
@@ -108,6 +113,7 @@ function keyPressed() {
     holding = (holding + 1) % inventory.length;
     updateinv();
   }
+  if (k == '~') cheats();
 }
 
 function keyReleased() {

@@ -26,6 +26,7 @@ class Entity {
   }
 
   remove() {
+    this.removed = true;
     delete entities[this.id];
   }
 
@@ -72,11 +73,15 @@ class Squish extends Entity {
       if (Date.now() - this.cooldown > 100) {
         this.cooldown = Date.now();
         player.damage({
-          basic: Math.floor(Math.random() * 3) + 1
+          basic: Math.floor(Math.random() * 4) + 2
         }[this.type], this.id);
       }
     } else {
       let x = createVector((Math.random() - .5) * dt * .5, (Math.random() - .5) * dt * .5);
+      if (hbox(this.pos, player.pos, 4 * size) && !player.dead)
+        x.add(player.pos.copy().sub(this.pos).setMag(dt * .1));
+      if (hbox(this.pos, player.pos, 16 * size) && !player.dead)
+        x.add(player.pos.copy().sub(this.pos).setMag(dt * .05));
       if (pcoll(this.pos.copy().add(x))) this.pos.add(x);
     }
   }
@@ -106,12 +111,11 @@ class Squish extends Entity {
     }[this.type]);
     strokeWeight(8);
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
-    // imageMode(CENTER);
     if (this.holding && !this.dead) {
       push();
       rotate(this.rotation);
-      image(tex(this.holding), size * .8, -size * .75,
-        tex(this.holding).width / tex(this.holding).height * size * 1.5, size * 1.5);
+      let s = (tex(this.holding).size || 1) * size;
+      image(tex(this.holding), size * .8, s * -.75, s * 1.5, s * 1.5);
       pop();
     }
     if (this.hp < this.maxhp) {
@@ -182,11 +186,9 @@ class Bullet extends Entity {
   constructor(id, type, x, y, data = {}) {
     super(id, type, x, y, data);
     this.class = "bullet";
-    this.id = id;
-    this.type = type;
-    this.pos = createVector(x, y);
     this.from = data.from;
     this.rot = data.rot;
+    if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
   }
 
   draw() {
@@ -200,21 +202,14 @@ class Bullet extends Entity {
   }
 
   tick() {
-    if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
-    let v = createVector(size * .05 * dt, 0).setHeading(this.rot);
-    this.pos.add(v);
+    for (let i = 0; i < 2; i++) {
+      this.pos.add(createVector(size * .05 * dt * .5, 0).setHeading(this.rot));
+      if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
+    }
     Object.values(entities).forEach(e => {
       if (!e.hp || e.id == this.from) return;
       if (hbox(this.pos, e.pos, size * 1.5)) {
-        e.damage({
-          pistol: 15,
-          shotgun: 5,
-          power: 25,
-        }[this.type] + Math.floor(Math.random() * ({
-          pistol: 5,
-          shotgun: 2,
-          power: 10,
-        }[this.type] + 1)), this.from);
+        e.damage(this.type[0] + Math.floor(Math.random() * ((this.type[1] || 0) + 1)), this.from);
         this.remove();
       }
     });
@@ -228,4 +223,61 @@ function spawnzone(t = 'enemy') {
     Math.floor(Math.random() * (x[0] - x[2])) + x[2],
     Math.floor(Math.random() * (x[1] - x[3])) + x[3],
   );
+}
+
+class Flame extends Entity {
+  constructor(id, type, x, y, data = {}) {
+    super(id, type, x, y, data);
+    this.class = "flame";
+    this.from = data.from;
+    this.rot = data.rot;
+    this.vel = data.vel || 0;
+    this.size = data.size || size;
+    this.svel = this.vel * .5;
+  }
+
+  draw() {
+    push();
+    translate(this.pos);
+    fill(255, 0, 0);
+    stroke(255, 128, 0);
+    strokeWeight(2);
+    scale(Math.sqrt(this.size));
+    rect(-4, -4, 8, 8);
+    pop();
+  }
+
+  tick() {
+    this.vel *= .9;
+    let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
+    if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
+    else this.vel = 0;
+    this.svel *= .99;
+    this.size += this.svel * 3;
+    this.size -= 50 / this.size;
+    Object.values(entities).forEach(e => {
+      if (e.class == 'flame' && e != this && this.size > e.size &&
+        hbox(this.pos, e.pos, Math.min(this.size, size * 12) * .5 + e.size * .5)) {
+        this.pos.add(e.pos.copy().sub(this.pos).mult(.01));
+        e.size -= 1;
+        this.size += .5;
+        return;
+      }
+      if (!e.hp /*|| e.id == this.from*/) return;
+      if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
+        let x = Math.random() * Math.min(this.size, size * 12) / this.pos.copy()
+          .sub(e.pos).magSq() * dt * .2;
+        // console.log(e.class + '.' + e.type, x);
+        e.damage(x, this.from);
+        this.svel -= x * .05;
+      }
+    });
+    if (this.size <= 1) this.remove();
+  }
+
+  onscreen(c) {
+    let x = this.pos.copy().add(c);
+    return x.x > -this.size * .5 && x.x < windowWidth + this.size * .5 &&
+      x.y > -this.size * .5 && x.y < windowHeight + this.size * .5;
+  }
 }

@@ -8,8 +8,8 @@ class Item extends Entity {
   draw() {
     push();
     translate(this.pos);
-    image(tex(this.type), 0, 0, 
-      tex(this.type).width / tex(this.type).height * size * 1.5, size * 1.5);
+    let s = (tex(this.type).size || 1) * size;
+    image(tex(this.type), s * -.5, s * -.5, s * 1.5, s * 1.5);
     pop();
   }
 
@@ -24,18 +24,7 @@ class Item extends Entity {
       }
       if (this.type == 'ammo') return ammo += this.amount;
       if (this.type == 'hp') return player.heal(this.amount);
-      let y = false;
-      inventory.forEach(x => {
-        if (x[0] == this.type) {
-          y = true;
-          x[1] += this.amount;
-        }
-      });
-      if (!y) {
-        inventory.push([this.type, this.amount]);
-        holding = inventory.length - 1;
-      }
-      updateinv();
+      give(this.type, this.amount);
     }
   }
 
@@ -45,16 +34,43 @@ class Item extends Entity {
 }
 classes.item = Item;
 
+function give(type, amount = 1) {
+  let y = false;
+  inventory.forEach(x => {
+    if (x[0] == type) {
+      y = true;
+      x[1] += amount;
+    }
+  });
+  if (!y) {
+    inventory.push([type, amount]);
+    holding = inventory.length - 1;
+  }
+  updateinv();
+}
+
 function useitem() {
   if (player.holding == 'pistol' && Date.now() - player.cooldown >= 250 && firstshot && ammo >= .5) {
     player.cooldown = Date.now();
-    makebullet(powerammo ? 'power' : 'pistol', Math.PI * .05, 1);
+    makebullet(powerammo ? [25] : [15, 5], Math.PI * .05, 1);
     ammo -= .5;
   }
-  if (player.holding == 'shotgun' && Date.now() - player.cooldown >= 1000 && firstshot && ammo >= 2) {
+  if (player.holding == 'shotgun' && Date.now() - player.cooldown >= 1000 && firstshot && ammo >= 1) {
     player.cooldown = Date.now();
-    makebullet(powerammo ? 'power' : 'shotgun', Math.PI * .15, 6);
+    makebullet(powerammo ? [25] : [5, 2], Math.PI * .15, 6);
     ammo -= 1;
+  }
+  if (player.holding == 'machinegun' && Date.now() - player.cooldown >= 75 && ammo >= .2) {
+    player.cooldown = Date.now();
+    makebullet(powerammo ? [15] : [7, 5], Math.PI * .075, 1);
+    ammo -= .2;
+  }
+  if (player.holding == 'flamethrower' && Date.now() - player.cooldown >= 100 && ammo >= 3) {
+    player.cooldown = Date.now();
+    let v = createVector(size * 2, 0).setHeading(player.rotation).add(player.pos);
+    new Flame(genid(), '', v.x, v.y, { from: player.id, rot: player.rotation + 
+      Math.random() * .2 - .1, vel: size * .1 });
+    ammo -= 3;
   }
   if (Date.now() - player.cooldown >= 250 && firstshot) {
     let d = false;
@@ -67,8 +83,8 @@ function useitem() {
       }
     });
   }
-  if (player.holding == 'mapper' && firstshot) 
-    console.log(Math.floor(player.pos.x) + ', ' + Math.floor(player.pos.y)); 
+  if (player.holding == 'mapper' && firstshot)
+    console.log(Math.floor(player.pos.x) + ', ' + Math.floor(player.pos.y));
 }
 
 function updateinv() {

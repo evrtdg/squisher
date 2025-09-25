@@ -53,7 +53,7 @@ async function initgame() {
 }
 
 function tickgame() {
-  Object.values(entities).reverse().forEach(x => x.tick());
+  Object.values(entities).reverse().forEach(x => { if (!x.removed) x.tick() });
   if (keys.arrowup || keys.mouseleft || keys[' ']) {
     useitem();
     firstshot = false;
@@ -99,7 +99,14 @@ function drawhud() {
   strokeWeight(2);
   textSize(16);
   textAlign(LEFT, TOP);
-  text(`points: ${points}\nhealth: ${player.hp}\nammo: ${ammo}`, 10, 10);
+  let a = ammo.toFixed(2).split('');
+  if (a.at(-1) == '0') {
+    a.pop();
+    if (a.at(-1) == '0') a.splice(-2, 2);
+  }
+  a = a.join('');
+  text(`points: ${points}\nhealth: ${Math.floor(player.hp)}` +
+    `\nammo: ${a}`, 10, 10);
   pop();
 }
 
@@ -135,4 +142,15 @@ function playerspawn() {
   player.pos.set(spawnzone('player'));
   new Item(genid(), 'pistol', player.pos.x + 50, player.pos.y);
   new Item(genid(), 'ammo', player.pos.x + 50, player.pos.y, { amount: 20 });
+}
+
+function cheats() {
+  // give('mapper');
+  give('machinegun');
+  give('shotgun');
+  give('flamethrower');
+  powerammo = true;
+  pierceammo = true;
+  ammo = 1000;
+  player.hp = 1000;
 }
