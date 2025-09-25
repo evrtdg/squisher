@@ -54,10 +54,19 @@ class Squish extends Entity {
     }[type];
     this.maxhp = this.hp;
     this.bonushp = this.player ? 50 : 0;
+    this.firetick = 0;
+    this.onfire = 0;
   }
 
   tick() {
     this.dispos.add(this.pos.copy().sub(this.dispos).mult(.5));
+    if (this.onfire > Date.now()) {
+      this.firetick += dt;
+      if (this.firetick > 250) {
+        this.firetick %= 250;
+        this.damage((this.onfire - Date.now()) * .0025);
+      }
+    }
     if (player == this) {
       if (!this.dead) {
         let m = createVector(
@@ -111,6 +120,12 @@ class Squish extends Entity {
     }[this.type]);
     strokeWeight(8);
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
+    if (this.onfire > Date.now()) {
+      strokeWeight(4);
+      stroke('#FFAA0088');
+      fill('#FF000088');
+      rect(-size, -size, size * 2, this.dead ? size : size * 2);
+    }
     if (this.holding && !this.dead) {
       push();
       rotate(this.rotation);
@@ -264,9 +279,17 @@ class Flame extends Entity {
         return;
       }
       if (!e.hp /*|| e.id == this.from*/) return;
+      if (hbox(this.pos, e.pos, Math.min(this.size, size * 4)) && e.class == 'squish') {
+        let x = Math.max(0, (e.onfire || 0) - Date.now());
+        // x = x * x;
+        x = x * .4 + dt * Math.max(this.vel * this.vel, size) * .8;
+        // x = Math.sqrt(x);
+        e.onfire = Math.min(x, 3e3) + Date.now();
+        this.vel = Math.max(this.vel - .0002 * x, 0);
+      }
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
-        let x = Math.random() * Math.min(this.size, size * 12) / this.pos.copy()
-          .sub(e.pos).magSq() * dt * .2;
+        let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) / Math.max(this.pos.copy()
+          .sub(e.pos).magSq(), size * 4) * dt * .2;
         // console.log(e.class + '.' + e.type, x);
         e.damage(x, this.from);
         this.svel -= x * .05;

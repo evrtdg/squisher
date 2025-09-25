@@ -17,6 +17,7 @@ let spawn = {
 
 let powerammo = false;
 let pierceammo = false;
+let itemmagnet = false;
 
 let player = null;
 let camera = null;
@@ -151,6 +152,7 @@ function cheats() {
   give('flamethrower');
   powerammo = true;
   pierceammo = true;
+  itemmagnet = true;
   ammo = 1000;
   player.hp = 1000;
 }

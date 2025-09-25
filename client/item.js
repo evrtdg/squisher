@@ -14,6 +14,8 @@ class Item extends Entity {
   }
 
   tick() {
+    if (itemmagnet && hbox(this.pos, player.pos, size * 8)) 
+      this.pos.add(player.pos.copy().sub(this.pos).setMag(5000 / player.pos.copy().sub(this.pos).magSq()));
     if (hbox(player.pos, this.pos, size * 2)) {
       if (mp) callEvent('delete', this.id);
       this.remove();
@@ -65,12 +67,14 @@ function useitem() {
     makebullet(powerammo ? [15] : [7, 5], Math.PI * .075, 1);
     ammo -= .2;
   }
-  if (player.holding == 'flamethrower' && Date.now() - player.cooldown >= 100 && ammo >= 3) {
+  if (player.holding == 'flamethrower' && Date.now() - player.cooldown >= 150 && ammo >= 1.5) {
     player.cooldown = Date.now();
     let v = createVector(size * 2, 0).setHeading(player.rotation).add(player.pos);
-    new Flame(genid(), '', v.x, v.y, { from: player.id, rot: player.rotation + 
-      Math.random() * .2 - .1, vel: size * .1 });
-    ammo -= 3;
+    new Flame(genid(), '', v.x, v.y, {
+      from: player.id, rot: player.rotation +
+        Math.random() * .2 - .1, vel: size * .1
+    });
+    ammo -= 1.5;
   }
   if (Date.now() - player.cooldown >= 250 && firstshot) {
     let d = false;
