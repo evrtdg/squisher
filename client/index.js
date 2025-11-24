@@ -14,6 +14,7 @@ let sounds = {};
 let dt = 0;
 let tps = 45;
 let itps = 1000 / tps;
+let pdps = 1000 / 24;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
@@ -59,7 +60,6 @@ function windowResized() {
 }
 
 function draw() {
-  background(255);
   if (menu == 'menu') {
     fill(255, 0, 0);
     rect(20, 20, 20);
@@ -70,7 +70,15 @@ function draw() {
       tickgame();
       dt = dt % itps;
     }
-    drawgame();
+    drawgame(true);
+  } else if (menu == 'pause') {
+    dt += deltaTime;
+    if (dt > pdps) {
+      if (dt > 100) dt = 100;
+      drawgame();
+      dt = dt % pdps;
+    }
+    drawpause();
   }
 }
 
@@ -104,9 +112,9 @@ function removemenu() {
 
 async function switchmenu(m, g) {
   if (m == menu) return;
-  game = g;
+  if (g) game = g;
   if (menu == 'menu') removemenu();
-  if (m == 'game') await initgame();
+  if (m == 'game' && menu == 'menu') await initgame();
   menu = m;
   if (menu == 'menu') initmenu();
 }
@@ -115,11 +123,12 @@ function keyPressed() {
   let k = key.toLowerCase();
   keys[k] = true;
   keytimes[k] = Date.now() - kloop;
-  if ((k == 'arrowdown' || k == 'mouseright') && player) {
+  if ((k == 'arrowdown' || k == 'mouseright' || k == 'q') && player && menu == "game") {
     holding = (holding + 1) % inventory.length;
     updateinv();
   }
-  if (k == '~') cheats();
+  if (k == '~' && player && menu == "game") cheats();
+  if (k == 'escape' && player) switchmenu(menu == 'pause' ? 'game' : 'pause');
 }
 
 function keyReleased() {
@@ -129,12 +138,12 @@ function keyReleased() {
 
 function mouseMoved() {
   let x = createVector(mouseX, mouseY).sub(windowWidth * .5, windowHeight * .5).heading();
-  if (player) player.rotation = x;
+  if (player && menu == "game") player.rotation = x;
 }
 
 function mouseDragged() {
   let x = createVector(mouseX, mouseY).sub(windowWidth * .5, windowHeight * .5).heading();
-  if (player) player.rotation = x;
+  if (player && menu == "game") player.rotation = x;
 }
 
 function mousePressed() {
@@ -147,3 +156,14 @@ function mouseReleased() {
   key = 'mouse' + mouseButton;
   keyReleased();
 }
+
+function drawpause() {
+  push();
+  fill(255, 0, 0);
+  stroke(0, 0, 0);
+  strokeWeight(2);
+  rect(50, 50, 100, 100);
+  pop();
+}
+
+window.oncontextmenu = e => e.preventDefault();

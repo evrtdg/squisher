@@ -32,17 +32,19 @@ let score = 0;
 
 async function initgame() {
   entities = {};
-  if (game == 'classic') {
-    mp = false;
-    player = new Squish(genid(), 'player', 0, 0);
-  } else {
-    if (!await connect()) {
-      alert('Server is offline. Play classic mode instead.');
-      switchmenu('menu');
-      return;
-    };
-    mp = true;
-  }
+  mp = false;
+  if (game != 'classic') if (!await connect(game)) {
+    alert('Server is offline. Play classic mode instead.');
+    switchmenu('menu');
+    return;
+  } else mp = true;
+  player = createEntity({
+    class: 'squish',
+    id: genid(),
+    type: 'player',
+    x: 0,
+    y: 0
+  });
   inventory = [[null, 1]];
   holding = 0;
   points = 0;
@@ -54,8 +56,8 @@ async function initgame() {
 }
 
 function tickgame() {
-  Object.values(entities).reverse().forEach(x => { if (!x.removed) x.tick() });
-  if (keys.arrowup || keys.mouseleft || keys[' ']) {
+  Object.values(entities).reverse().forEach(x => { if (!x.removed && x.OWNER == username) x.tick() });
+  if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e) {
     useitem();
     firstshot = false;
   } else firstshot = true;
@@ -70,17 +72,18 @@ function tickgame() {
   if (game == 'classic') classictick();
 }
 
-function drawgame() {
+function drawgame(ingame) {
+  background(255);
   push();
   let cam = (camera.constructor.name == 'String' ?
     entities[camera]?.dispos || entities[camera]?.pos : camera) || createVector();
   cam = cam.copy().mult(-1).add(createVector(windowWidth, windowHeight).mult(.5));
   translate(cam);
-  drawmap();
-  Object.values(entities).filter(x => x.onscreen(cam)).reverse().forEach(x => x.draw());
-  if (game == 'classic') classicdraw();
+  drawmap(ingame);
+  Object.values(entities).filter(x => x.onscreen(cam)).reverse().forEach(x => x.draw(ingame));
+  if (game == 'classic') classicdraw(ingame);
   pop();
-  drawhud();
+  if (ingame) drawhud();
 }
 
 function drawmap() {
@@ -111,15 +114,19 @@ function drawhud() {
   pop();
 }
 
-function makebullet(type = 'basic', spread = 0, amount = 1) {
-  // if (mp) callEvent('shoot');
-  // else {
+function makebullet(damage, spread = 0, amount = 1) {
   for (let i = 0; i < amount; i++) {
     let v = createVector(size * 1.5, 0).setHeading(player.rotation).add(player.pos);
-    new Bullet(genid(), type, v.x, v.y,
-      { from: player.id, rot: player.rotation - spread * .5 + Math.random() * spread });
+    createEntity({
+      class: 'bullet',
+      id: genid(),
+      damage,
+      x: v.x,
+      y: v.y,
+      from: player.id,
+      rot: player.rotation - spread * .5 + Math.random() * spread
+    });
   }
-  // }
 }
 
 function playerspawn() {
@@ -129,22 +136,43 @@ function playerspawn() {
   camera = player.id;
   updateinv();
   player.pos.set(spawnzone('player'));
-  new Item(genid(), 'pistol', player.pos.x + 50, player.pos.y);
-  new Item(genid(), 'ammo', player.pos.x + 50, player.pos.y, { amount: 20 });
+  createEntity({
+    class: 'item',
+    id: genid(),
+    type: 'pistol',
+    x: player.pos.x + 50,
+    y: player.pos.y
+  });
+  createEntity({
+    class: 'item',
+    id: genid(),
+    type: 'ammo',
+    x: player.pos.x + 50,
+    y: player.pos.y,
+    amount: 20
+  });
 }
 
 function playerdeath() {
   player.dead = true;
   inventory.forEach(x => {
-    if (x[0]) new Item(genid(), x[0],
-      player.pos.x + Math.random() * size - size * .5,
-      player.pos.y + Math.random() * size - size * .5,
-      { amount: x[1] })
+    if (x[0]) createEntity({
+      class: 'item',
+      id: genid(),
+      type: x[0],
+      x: player.pos.x + Math.random() * size - size * .5,
+      y: player.pos.y + Math.random() * size - size * .5,
+      amount: x[1]
+    });
   });
-  if (ammo) new Item(genid(), 'ammo',
-    player.pos.x + Math.random() * size - size * .5,
-    player.pos.y + Math.random() * size - size * .5,
-    { amount: ammo });
+  if (ammo) createEntity({
+    class: 'item',
+    id: genid(),
+    type: 'ammo',
+    x: player.pos.x + Math.random() * size - size * .5,
+    y: player.pos.y + Math.random() * size - size * .5,
+    amount: ammo
+  });
   inventory = [[null, 1]];
   ammo = 0;
   updateinv();

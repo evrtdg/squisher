@@ -26,8 +26,7 @@ class Entity {
   }
 
   remove() {
-    this.removed = true;
-    delete entities[this.id];
+    deleteEntity(this.id);
   }
 
   onscreen(c) {
@@ -35,11 +34,43 @@ class Entity {
     return x.x > -size * 3 && x.x < windowWidth + size * 3 &&
       x.y > -size * 3 && x.y < windowHeight + size * 3;
   }
+
+  update(data) {
+    Object.entries(data).forEach(x => {
+      console.log(x);
+    });
+  }
+}
+
+function createEntity(data, local = true) {
+  let e = new (classes[data.class])(data.id, data.type, data.x, data.y, data);
+  e.OWNER = local ? username : data.OWNER;
+  console.log('create', e.type, e.class, e.OWNER, e.id);
+  if (!local && mp) packet.create.push(data);
+  return e;
+}
+
+function deleteEntity(id, local = true) {
+  let e = entities[id];
+  if (!e) return false;
+  console.log('delete', e.type, e.class, e.OWNER, e.id);
+  e.removed = true;
+  delete entities[id];
+  if (!local && mp) packet.delete.push(id);
+  return true;
+}
+
+function updateEntity(id, data, local = true) {
+  let e = entities[id];
+  if (!e) return false;
+  if (local) e.update(data);
+  if (!local && mp) packet.update.push([id, data]);
+  return true;
 }
 
 class Squish extends Entity {
   constructor(id, type, x, y, data = {}) {
-    super(id, type, x, y);
+    super(id, type, x, y, data);
     this.dispos = createVector(x, y);
     this.class = "squish";
     this.holding = data.holding || null;
@@ -152,27 +183,50 @@ class Squish extends Entity {
         let p = Math.floor(Math.random() * ({
           basic: 5, //points
         }[this.type] + 1));
-        if (p > 0) new Item(genid(), 'point',
-          this.pos.x + Math.random() * size - size * .5,
-          this.pos.y + Math.random() * size - size * .5, { amount: p });
+        if (p > 0) createEntity({
+          class: 'item',
+          id: genid(),
+          type: 'point',
+          x: this.pos.x + Math.random() * size - size * .5,
+          y: this.pos.y + Math.random() * size - size * .5,
+          amount: p
+        });
 
         let a = Math.floor(Math.random() * ({
           basic: 15, //ammo max
         }[this.type] + 1)) - Math.floor(Math.random() * ({
           basic: 5, //ammo sub
         }[this.type] + 1));
-        if (a > 0) new Item(genid(), 'ammo',
-          this.pos.x + Math.random() * size - size * .5,
-          this.pos.y + Math.random() * size - size * .5, { amount: p });
+        if (a > 0) createEntity({
+          class: 'item',
+          id: genid(),
+          type: 'ammo',
+          x: this.pos.x + Math.random() * size - size * .5,
+          y: this.pos.y + Math.random() * size - size * .5,
+          amount: p
+        });
 
         let h = Math.floor(Math.random() * ({
           basic: 15, //hp max
         }[this.type] + 1)) - Math.floor(Math.random() * ({
           basic: 5, //hp sub
         }[this.type] + 1));
-        if (h > 0) new Item(genid(), 'hp',
-          this.pos.x + Math.random() * size - size * .5,
-          this.pos.y + Math.random() * size - size * .5, { amount: h });
+        if (h > 0) createEntity({
+          class: 'item',
+          id: genid(),
+          type: 'hp',
+          x: this.pos.x + Math.random() * size - size * .5,
+          y: this.pos.y + Math.random() * size - size * .5,
+          amount: h
+        });
+        if (Math.random() < 0.05) createEntity({
+          class: 'item',
+          id: genid(),
+          type: 'bomb',
+          x: this.pos.x + Math.random() * size - size * .5,
+          y: this.pos.y + Math.random() * size - size * .5,
+          amount: Math.floor(Math.random() * 3) + 1
+        });
         this.remove();
       } else {
         playerdeath();
@@ -203,6 +257,7 @@ class Bullet extends Entity {
     this.class = "bullet";
     this.from = data.from;
     this.rot = data.rot;
+    this.damage = data.damage || [25];
     if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
   }
 
@@ -224,12 +279,13 @@ class Bullet extends Entity {
     Object.values(entities).forEach(e => {
       if (!e.hp || e.id == this.from) return;
       if (hbox(this.pos, e.pos, size * 1.5)) {
-        e.damage(this.type[0] + Math.floor(Math.random() * ((this.type[1] || 0) + 1)), this.from);
+        e.damage(this.damage[0] + Math.floor(Math.random() * ((this.damage[1] || 0) + 1)), this.from);
         this.remove();
       }
     });
   }
 }
+classes.bullet = Bullet;
 
 function spawnzone(t = 'enemy') {
   let x = spawn.map[t];
@@ -304,11 +360,100 @@ class Flame extends Entity {
       x.y > -this.size * .5 && x.y < windowHeight + this.size * .5;
   }
 }
+classes.flame = Flame;
 
 class Bomb extends Entity {
-  constructor(id, type, x, y, data) {
-    super(id, type, x, y);
-    this.class = "Bomb";
-    this.from = data.from;
+  constructor(id, type, x, y, data = {}) {
+    super(id, type, x, y, data);
+    this.class = "bomb";
+    this.from = data.from || null;
+    this.countdown = Date.now();
+    this.rot = data.rot || 0;
+    this.vel = data.vel || 0;
+  }
+
+  draw() {
+    this.vel *= .97;
+    let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
+    if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
+    else this.vel = 0;
+    push();
+    translate(this.pos);
+    let x = Date.now() - this.countdown;
+    let s = x * .01 + size * .5;
+    image(tex((x % 1e3 > 500 ? 'white' : '') + 'bomb'),
+      (s + size) * -.5, (s + size) * -.5, size + s, size + s);
+    Object.values(entities).forEach(e => {
+      if (hbox(this.pos, e.pos, size * 1)) {
+        if (e.class == "squish" &&
+          e.id != this.from) this.explode(this);
+      }
+    });
+    if (x > 3e3) this.explode(this);
+    pop();
+  }
+
+  explode() {
+    createEntity({
+      class: 'explosion',
+      id: genid(),
+      x: this.pos.x,
+      y: this.pos.y,
+      from: this.from,
+    });
+    this.remove();
   }
 }
+classes.bomb = Bomb;
+
+
+class Explosion extends Entity {
+  constructor(id, type, x, y, data = {}) {
+    super(id, type, x, y, data);
+    this.class = "explosion";
+    this.from = data.from;
+    this.size = data.size || size;
+    this.force = data.force || 8;
+    this.fade = 0;
+  }
+
+  draw() {
+    push();
+    translate(this.pos);
+    scale(Math.sqrt(this.size));
+    // fill(255);
+    // noStroke();
+    // rect(-4, -4, 8, 8);
+    fill(255, 0, 0, (1 - this.fade) * 255);
+    stroke(255, 128, 0, (1 - this.fade) * 255);
+    strokeWeight(2);
+    rect(-4, -4, 8, 8);
+    pop();
+  }
+
+  tick() {
+    this.force *= .99;
+    this.size += this.force * 8;
+    if (this.fade < .8) {
+      Object.values(entities).forEach(e => {
+        if (e.class == "bomb" && Date.now() - e.countdown > 500) e.explode();
+        if (!e.hp /*|| e.id == this.from*/) return;
+        if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
+          let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) /
+            Math.max(this.pos.copy().sub(e.pos).magSq(), size * 4) * dt * 20 * (1 - this.fade);
+          // console.log(e.class + '.' + e.type, x);
+          if (x > 0) e.damage(x, this.from);
+        }
+      });
+    }
+    this.fade += this.force * 0.003 + .08;
+    if (this.fade >= 1) this.remove();
+  }
+
+  onscreen(c) {
+    let x = this.pos.copy().add(c);
+    return x.x > -this.size * .5 && x.x < windowWidth + this.size * .5 &&
+      x.y > -this.size * .5 && x.y < windowHeight + this.size * .5;
+  }
+}
+classes.explosion = Explosion;

@@ -1,6 +1,6 @@
 class Item extends Entity {
   constructor(id, type, x, y, data = {}) {
-    super(id, type, x, y);
+    super(id, type, x, y, data);
     this.class = "item";
     this.amount = data.amount || 1;
   }
@@ -14,7 +14,7 @@ class Item extends Entity {
   }
 
   tick() {
-    if (itemmagnet && hbox(this.pos, player.pos, size * 8))
+    if (itemmagnet && hbox(this.pos, player.pos, size * 8) && !player.dead)
       this.pos.add(player.pos.copy().sub(this.pos).setMag(5000 / player.pos.copy().sub(this.pos).magSq()));
     if (hbox(player.pos, this.pos, size * 2) && !player.dead) {
       if (mp) callEvent('delete', this.id);
@@ -57,6 +57,22 @@ function useitem() {
     makebullet(powerammo ? [25] : [15, 5], Math.PI * .05, 1);
     ammo -= .5;
   }
+  if (player.holding == 'bomb' && inventory[holding][1] > 0 &&
+    Date.now() - player.cooldown >= 10 && firstshot) {
+    player.cooldown = Date.now();
+    inventory[holding][1]--;
+    updateinv();
+    let v = createVector(size * 1.5, 0).setHeading(player.rotation).add(player.pos);
+    createEntity({
+      class: 'bomb',
+      id: genid(),
+      x: v.x,
+      y: v.y,
+      from: player.id,
+      rot: player.rotation + Math.random() * .2 - .1, 
+      vel: size * .075
+    });
+  }
   if (player.holding == 'shotgun' && Date.now() - player.cooldown >= 1000 && firstshot && ammo >= 1) {
     player.cooldown = Date.now();
     makebullet(powerammo ? [15] : [6, 3], Math.PI * .15, 6);
@@ -80,9 +96,13 @@ function useitem() {
   if (player.holding == 'flamethrower' && Date.now() - player.cooldown >= 150 && ammo >= 1.5) {
     player.cooldown = Date.now();
     let v = createVector(size * 2, 0).setHeading(player.rotation).add(player.pos);
-    new Flame(genid(), '', v.x, v.y, {
-      from: player.id, rot: player.rotation +
-        Math.random() * .2 - .1, vel: size * .1
+    createEntity({
+      class: 'flame',
+      id: genid(),
+      x: v.x,
+      y: v.y,
+      from: player.id,
+      rot: player.rotation + Math.random() * .2 - .1, vel: size * .1
     });
     ammo -= 1.5;
   }
@@ -102,6 +122,12 @@ function useitem() {
 }
 
 function updateinv() {
+  inventory.forEach((x, i) => {
+    if (x[1] <= 0) {
+      inventory.splice(i, 1);
+      if (i == holding) holding--;
+    }
+  });
   if (holding >= inventory.length) holding = inventory.length - 1;
   if (holding < 0) holding = 0;
   player.holding = inventory[holding]?.[0] || null;

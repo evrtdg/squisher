@@ -3,10 +3,16 @@ function classicinit() {
 }
 
 function classictick() {
-  if (Math.random() < .01 && Object.values(entities).filter(x => 
+  if (Math.random() < .01 && Object.values(entities).filter(x =>
     x.class == 'squish' && !x.player).length < 100) {
     let p = spawnzone('enemy');
-    new Squish(genid(), 'basic', p.x, p.y);
+    createEntity({
+      class: 'squish',
+      id: genid(),
+      type: 'basic',
+      x: p.x,
+      y: p.y
+    });
   }
 }
 

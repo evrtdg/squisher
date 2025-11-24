@@ -20,11 +20,11 @@ function bcoll(p1, s = size, c = true) {
   if (!pcoll(p2)) return false;
   if (!pcoll(createVector(p1.x, p2.y))) return false;
   if (!pcoll(createVector(p2.x, p1.y))) return false;
-  // if (!pcoll(createVector((p1.x + p2.x) * .5, p1.y))) return false;
-  // if (!pcoll(createVector((p1.x + p2.x) * .5, p2.y))) return false;
-  // if (!pcoll(createVector(p1.x, (p1.y + p2.y) * .5))) return false;
-  // if (!pcoll(createVector(p2.x, (p1.y + p2.y) * .5))) return false;
-  if (!pcoll(createVector((p1.x + p2.x) * .5, (p1.y + p2.y) * .5))) return false;
+  if (!pcoll(createVector((p1.x + p2.x) * .5, p1.y))) return false;
+  if (!pcoll(createVector((p1.x + p2.x) * .5, p2.y))) return false;
+  if (!pcoll(createVector(p1.x, (p1.y + p2.y) * .5))) return false;
+  if (!pcoll(createVector(p2.x, (p1.y + p2.y) * .5))) return false;
+  // if (!pcoll(createVector((p1.x + p2.x) * .5, (p1.y + p2.y) * .5))) return false;
   return true;
 }
 
