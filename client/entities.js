@@ -436,9 +436,9 @@ class Explosion extends Entity {
     this.size += this.force * 8;
     if (this.fade < .8) {
       Object.values(entities).forEach(e => {
-        if (e.class == "bomb" && Date.now() - e.countdown > 500) e.explode();
-        if (!e.hp /*|| e.id == this.from*/) return;
         if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
+          if (e.class == "bomb" && Date.now() - e.countdown > 500) e.explode();
+          if (!e.hp /*|| e.id == this.from*/) return;
           let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) /
             Math.max(this.pos.copy().sub(e.pos).magSq(), size * 4) * dt * 20 * (1 - this.fade);
           // console.log(e.class + '.' + e.type, x);
