@@ -233,14 +233,17 @@ class Squish extends Entity {
         playerdeath();
         if (f) camera = f;
       }
+    } else {
+      updateEntity(this.id, {hp: this.hp});
     }
   }
 
   heal(x) {
+    let r = this.hp;
     this.hp += x;
-    let r = (this.hp + x) - (this.maxhp + this.bonushp);
     if (this.hp > this.maxhp + this.bonushp) this.hp = this.maxhp + this.bonushp;
-    return r;
+    if (this.hp != r) updateEntity(this.id, {hp: this.hp});
+    return (r + x) - (this.maxhp + this.bonushp);
   }
 
   getdata() {
