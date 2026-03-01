@@ -38,6 +38,7 @@ function setup() {
   textures.ammo = loadImage('assets/ammo.png');
   textures.map = loadImage('assets/map.svg');
   textures.hp = loadImage('assets/hp.png');
+  textures.medkit = loadImage('assets/medkit.png');
   textures.missing = loadImage('assets/missing.png');
   sounds.missing = loadSound('assets/missing.mp3');
   switchmenu('menu');

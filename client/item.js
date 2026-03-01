@@ -25,7 +25,11 @@ class Item extends Entity {
         return;
       }
       if (this.type == 'ammo') return ammo += this.amount;
-      if (this.type == 'hp') return player.heal(this.amount);
+      if (this.type == 'hp') {
+        let r = Math.floor(player.heal(this.amount) / 4);
+        if (r > 0) give("medkit", r);
+        return;
+      }
       give(this.type, this.amount);
     }
   }
@@ -46,7 +50,7 @@ function give(type, amount = 1) {
   });
   if (!y) {
     inventory.push([type, amount]);
-    holding = inventory.length - 1;
+    if (type != "medkit") holding = inventory.length - 1;
   }
   updateinv();
 }
@@ -130,5 +134,7 @@ function updateinv() {
   });
   if (holding >= inventory.length) holding = inventory.length - 1;
   if (holding < 0) holding = 0;
+  let o = player.holding;
   player.holding = inventory[holding]?.[0] || null;
+  if (o != player.holding) updateEntity(player.id, {holding: player.holding})
 }

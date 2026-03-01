@@ -19,6 +19,7 @@ let powerammo = false;
 let pierceammo = false;
 let itemmagnet = false;
 
+/** @type {Squish} */
 let player = null;
 let camera = null;
 let multiplayer = {};

@@ -60,9 +60,10 @@ function deleteEntity(id, local = true) {
   return true;
 }
 
-function updateEntity(id, data, local = true) {
+function updateEntity(id, data, local = false) {
   let e = entities[id];
   if (!e) return false;
+  console.log('update', e.type, e.class, e.OWNER, e.id, data);
   if (local) e.update(data);
   if (!local && mp) packet.update.push([id, data]);
   return true;
@@ -169,8 +170,8 @@ class Squish extends Entity {
       fill(0);
       rect(-size * .8, -size * 1.3, size * 1.6, size * .4);
       fill(255, 0, 0);
-      rect(-size * .8, -size * 1.3, size * 1.6 *
-        (this.hp / this.maxhp), size * .4);
+      rect(-size * .8, -size * 1.3, this.hp > 0 ? size * 1.6 *
+        (this.hp / this.maxhp) : 0, size * .4);
     }
     pop();
   }
@@ -219,7 +220,7 @@ class Squish extends Entity {
           y: this.pos.y + Math.random() * size - size * .5,
           amount: h
         });
-        if (Math.random() < 0.05) createEntity({
+        if (Math.random() < 0.15) createEntity({
           class: 'item',
           id: genid(),
           type: 'bomb',
@@ -237,7 +238,9 @@ class Squish extends Entity {
 
   heal(x) {
     this.hp += x;
+    let r = (this.hp + x) - (this.maxhp + this.bonushp);
     if (this.hp > this.maxhp + this.bonushp) this.hp = this.maxhp + this.bonushp;
+    return r;
   }
 
   getdata() {
@@ -259,6 +262,7 @@ class Bullet extends Entity {
     this.rot = data.rot;
     this.damage = data.damage || [25];
     if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
+    // this.colc = 0
   }
 
   draw() {
@@ -372,11 +376,15 @@ class Bomb extends Entity {
     this.vel = data.vel || 0;
   }
 
-  draw() {
+  tick() {
     this.vel *= .97;
     let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
     if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
     else this.vel = 0;
+    if (Date.now() - this.countdown > 3e3) this.explode(this);
+  }
+
+  draw() {
     push();
     translate(this.pos);
     let x = Date.now() - this.countdown;
@@ -389,7 +397,6 @@ class Bomb extends Entity {
           e.id != this.from) this.explode(this);
       }
     });
-    if (x > 3e3) this.explode(this);
     pop();
   }
 
