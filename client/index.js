@@ -65,7 +65,15 @@ function windowResized() {
 function draw() {
   if (menu == 'menu') {
     fill(255, 0, 0);
+    push();
     rect(20, 20, 20);
+    fill(255);
+    stroke(0);
+    strokeWeight(2);
+    textSize(16);
+    textAlign(LEFT, TOP);
+    text(" !   IN DEV", 23, 23);
+    pop();
   } else if (menu == 'game') {
     dt += deltaTime;
     if (dt > itps) {

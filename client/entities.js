@@ -229,14 +229,14 @@ class Squish extends Entity {
           y: this.pos.y + Math.random() * size - size * .5,
           amount: h
         });
-        if (Math.random() < 0.01) createEntity({
-          class: 'item',
-          id: genid(),
-          type: 'ferret',
-          x: this.pos.x + Math.random() * size - size * .5,
-          y: this.pos.y + Math.random() * size - size * .5,
-          amount: 1
-        });
+        // if (Math.random() < 0.01) createEntity({
+        //   class: 'item',
+        //   id: genid(),
+        //   type: 'ferret',
+        //   x: this.pos.x + Math.random() * size - size * .5,
+        //   y: this.pos.y + Math.random() * size - size * .5,
+        //   amount: 1
+        // }); // HELL NO
         this.remove();
       } else {
         playerdeath();

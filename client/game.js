@@ -119,7 +119,7 @@ function drawhud() {
     fill(holding == i ? 255 : 220);
     rect(innerWidth - 60, 10 + 60 * i, 50, 50);
     image(tex(x[0]), innerWidth - 55, 15 + 60 * i, 40, 40);
-    if (x[1]) {
+    if (x[1] > 1) {
       // fill(0);
       // stroke(255);
       strokeWeight(2);
