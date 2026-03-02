@@ -77,6 +77,22 @@ function useitem() {
       vel: size * .075
     });
   }
+  if (player.holding == 'ferret' && inventory[holding][1] > 0 &&
+    Date.now() - player.cooldown >= 10 && firstshot) {
+    player.cooldown = Date.now();
+    inventory[holding][1]--;
+    updateinv();
+    let v = createVector(size * 1.5, 0).setHeading(player.rotation).add(player.pos);
+    createEntity({
+      class: 'ferret',
+      id: genid(),
+      x: v.x,
+      y: v.y,
+      from: player.id,
+      rot: player.rotation + Math.random() * .2 - .1, 
+      vel: size * .075
+    });
+  }
   if (player.holding == 'shotgun' && Date.now() - player.cooldown >= 1000 && firstshot && ammo >= 1) {
     player.cooldown = Date.now();
     makebullet(powerammo ? [15] : [6, 3], Math.PI * .15, 6);

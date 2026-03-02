@@ -181,6 +181,7 @@ function playerdeath() {
 
 function cheats() {
   // give('mapper');
+  give('ferret', 50);
   give('machinegun');
   give('goldenmachine');
   give('shotgun');

@@ -34,6 +34,8 @@ function setup() {
   textures.flamethrower.size = 2;
   textures.bomb = loadImage('assets/bomb.svg');
   textures.whitebomb = loadImage('assets/whitebomb.svg');
+  textures.ferret = loadImage('assets/ferret.jpeg');
+  textures.whiteferret = loadImage('assets/whiteferret.jpeg');
   textures.point = loadImage('assets/point.png');
   textures.ammo = loadImage('assets/ammo.png');
   textures.map = loadImage('assets/map.svg');

@@ -416,6 +416,38 @@ class Bomb extends Entity {
 }
 classes.bomb = Bomb;
 
+class Ferret extends Bomb {
+  constructor(id, type, x, y, data = {}) {
+    super(id, type, x, y, data);
+    this.class = "ferret";
+  }
+
+  draw() {
+    this.vel *= .98;
+    let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
+    if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
+    push();
+    translate(this.pos);
+    let x = Date.now() - this.countdown;
+    image(tex((x % 400 > 200 ? 'white' : '') + 'ferret'), size * -2.5, size * -2.5, size * 5, size * 5);
+    if (x > 3000) this.explode();
+    pop();
+  }
+
+  explode() {
+    createEntity({
+      class: 'explosion',
+      id: genid(),
+      x: this.pos.x,
+      y: this.pos.y,
+      from: this.from,
+      size: 100000,
+      force: 2    
+    });
+    this.remove();
+  }
+}
+classes.ferret = Ferret;
 
 class Explosion extends Entity {
   constructor(id, type, x, y, data = {}) {
@@ -446,13 +478,14 @@ class Explosion extends Entity {
     this.size += this.force * 8;
     if (this.fade < .8) {
       Object.values(entities).forEach(e => {
-        if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
+        if (hbox(this.pos, e.pos, this.size)) { 
           if (e.class == "bomb" && Date.now() - e.countdown > 500) e.explode();
-          if (!e.hp /*|| e.id == this.from*/) return;
-          let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) /
-            Math.max(this.pos.copy().sub(e.pos).magSq(), size * 4) * dt * 20 * (1 - this.fade);
-          // console.log(e.class + '.' + e.type, x);
-          if (x > 0) e.damage(x, this.from);
+          if (!e.hp) return;
+
+          let dmg = Math.random() * this.size /
+            Math.max(this.pos.copy().sub(e.pos).magSq(), size * 4) * dt * (this.force * 2.5) * (1 - this.fade);
+          
+          if (dmg > 0) e.damage(dmg, this.from);
         }
       });
     }
