@@ -181,6 +181,15 @@ class Squish extends Entity {
     this.hp -= x;
     if (this.hp <= 0) {
       if (!this.player) {
+        if (Math.random() < 0.15) createEntity({
+          class: 'item',
+          id: genid(),
+          type: 'bomb',
+          x: this.pos.x + Math.random() * size - size * .5,
+          y: this.pos.y + Math.random() * size - size * .5,
+          amount: Math.floor(Math.random() * 3) + 1
+        });
+        
         let p = Math.floor(Math.random() * ({
           basic: 5, //points
         }[this.type] + 1));
@@ -219,14 +228,6 @@ class Squish extends Entity {
           x: this.pos.x + Math.random() * size - size * .5,
           y: this.pos.y + Math.random() * size - size * .5,
           amount: h
-        });
-        if (Math.random() < 0.15) createEntity({
-          class: 'item',
-          id: genid(),
-          type: 'bomb',
-          x: this.pos.x + Math.random() * size - size * .5,
-          y: this.pos.y + Math.random() * size - size * .5,
-          amount: Math.floor(Math.random() * 3) + 1
         });
         this.remove();
       } else {

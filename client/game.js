@@ -46,7 +46,7 @@ async function initgame() {
     x: 0,
     y: 0
   });
-  inventory = [[null, 1]];
+  inventory = [];
   holding = 0;
   points = 0;
   ammo = 0;
@@ -113,6 +113,21 @@ function drawhud() {
   text(`points: ${points}\nhealth: ${Math.floor(player.hp)}` +
     `\nammo: ${a}`, 10, 10);
   pop();
+  inventory.forEach((x, i) => {
+    stroke(0);
+    strokeWeight(holding == i ? 4 : 2);
+    fill(holding == i ? 255 : 220);
+    rect(innerWidth - 60, 10 + 60 * i, 50, 50);
+    image(tex(x[0]), innerWidth - 55, 15 + 60 * i, 40, 40);
+    if (x[1]) {
+      // fill(0);
+      // stroke(255);
+      strokeWeight(2);
+      textSize(20);
+      textAlign(RIGHT, BOTTOM);
+      text(x[1], innerWidth - 14, 60 + 60 * i);
+    }
+  });
 }
 
 function makebullet(damage, spread = 0, amount = 1) {
@@ -131,6 +146,7 @@ function makebullet(damage, spread = 0, amount = 1) {
 }
 
 function playerspawn() {
+  inventory = [];
   player.dead = false;
   player.hp = player.maxhp;
   player.holding = null;
@@ -174,7 +190,7 @@ function playerdeath() {
     y: player.pos.y + Math.random() * size - size * .5,
     amount: ammo
   });
-  inventory = [[null, 1]];
+  inventory = [];
   ammo = 0;
   updateinv();
 }

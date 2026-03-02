@@ -132,6 +132,10 @@ function keyPressed() {
   }
   if (k == '~' && player && menu == "game") cheats();
   if (k == 'escape' && player) switchmenu(menu == 'pause' ? 'game' : 'pause');
+  if (parseInt(k) < inventory?.length) {
+    holding = parseInt(k);
+    updateinv()
+  }
 }
 
 function keyReleased() {

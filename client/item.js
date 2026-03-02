@@ -27,7 +27,7 @@ class Item extends Entity {
       if (this.type == 'ammo') return ammo += this.amount;
       if (this.type == 'hp') {
         let r = Math.floor(player.heal(this.amount) / 4);
-        if (r > 0) give("medkit", r);
+        // if (r > 0) give("medkit", r);
         return;
       }
       give(this.type, this.amount);
