@@ -122,6 +122,7 @@ async function switchmenu(m, g) {
   if (menu == 'menu') initmenu();
 }
 
+let lk = "";
 function keyPressed() {
   let k = key.toLowerCase();
   keys[k] = true;
@@ -130,12 +131,13 @@ function keyPressed() {
     holding = (holding + 1) % inventory.length;
     updateinv();
   }
-  if (k == '~' && player && menu == "game") cheats();
+  if (k == '~' && player && menu == "game") cheats(lk == "z");
   if (k == 'escape' && player) switchmenu(menu == 'pause' ? 'game' : 'pause');
   if (parseInt(k) < inventory?.length) {
-    holding = parseInt(k);
+    holding = parseInt(k) - 1;
     updateinv()
   }
+  lk = k;
 }
 
 function keyReleased() {

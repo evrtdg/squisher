@@ -195,9 +195,9 @@ function playerdeath() {
   updateinv();
 }
 
-function cheats() {
+function cheats(x) {
   // give('mapper');
-  give('ferret', 50);
+  if (x) give('ferret', 50);
   give('machinegun');
   give('goldenmachine');
   give('shotgun');
