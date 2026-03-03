@@ -9,6 +9,7 @@ class Entity {
     this.type = type;
     this.pos = createVector(x, y);
     entities[id] = this;
+    this.old = {};
   }
 
   draw() {
@@ -22,7 +23,7 @@ class Entity {
   }
 
   tick() {
-
+    this.checkup();
   }
 
   remove() {
@@ -37,35 +38,21 @@ class Entity {
 
   update(data) {
     Object.entries(data).forEach(x => {
-      console.log(x);
+      if (x[0] == "x") return this.pos.x = x[1];
+      if (x[0] == "y") return this.pos.y = x[1];
+      this[x[0]] = x[1];
     });
   }
-}
 
-function createEntity(data, local = true) {
-  let e = new (classes[data.class])(data.id, data.type, data.x, data.y, data);
-  e.OWNER = local ? username : data.OWNER;
-  console.log('create', e.type, e.class, e.OWNER, e.id);
-  if (!local && mp) packet.create.push(data);
-  return e;
-}
-
-function deleteEntity(id, local = true) {
-  let e = entities[id];
-  if (!e) return false;
-  console.log('delete', e.type, e.class, e.OWNER, e.id);
-  e.removed = true;
-  delete entities[id];
-  if (!local && mp) packet.delete.push(id);
-  return true;
-}
-
-function updateEntity(id, data, local = true) {
-  let e = entities[id];
-  if (!e) return false;
-  if (local) e.update(data);
-  if (!local && mp) packet.update.push([id, data]);
-  return true;
+  checkup() {
+    let x = Math.floor(this.pos.x);
+    let y = Math.floor(this.pos.y);
+    if (this.old.x != x) updateEntity(this.id, { x });
+    if (this.old.y != y) updateEntity(this.id, { y });
+    this.old.x = x;
+    this.old.y = y;
+    if (this.checkupplus) this.checkupplus();
+  }
 }
 
 class Squish extends Entity {
@@ -87,10 +74,14 @@ class Squish extends Entity {
     this.bonushp = this.player ? 50 : 0;
     this.firetick = 0;
     this.onfire = 0;
+    this.name = data.name;
+  }
+
+  tickall() {
+    this.dispos.add(this.pos.copy().sub(this.dispos).mult(this.OWNER == username ? .5 : .2));
   }
 
   tick() {
-    this.dispos.add(this.pos.copy().sub(this.dispos).mult(.5));
     if (this.onfire > Date.now()) {
       this.firetick += dt;
       if (this.firetick > 250) {
@@ -99,6 +90,10 @@ class Squish extends Entity {
       }
     }
     if (player == this) {
+      if (this.hp <= 0) {
+        playerdeath();
+        // if (f) camera = f;
+      }
       if (!this.dead) {
         let m = createVector(
           ((keys.d || false) - (keys.a || false)) * dt * speed,
@@ -108,7 +103,7 @@ class Squish extends Entity {
         if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
       }
     }
-    if (this.player) return;
+    if (this.player) return this.checkup();
     if (hbox(this.pos, player.pos) && !player.dead) {
       if (Date.now() - this.cooldown > 100) {
         this.cooldown = Date.now();
@@ -124,11 +119,20 @@ class Squish extends Entity {
         x.add(player.pos.copy().sub(this.pos).setMag(dt * .05));
       if (pcoll(this.pos.copy().add(x))) this.pos.add(x);
     }
+    this.checkup();
+  }
+
+  checkupplus() {
+    let r = Math.floor(this.rotation * 5) * .20;
+    if (this.old.r != r) updateEntity(this.id, { rotation: r });
+    this.old.r = r;
   }
 
   draw() {
     push();
     translate(this.dispos);
+    let type = this.type;
+    if (this.player && this != player) type = "team";
     fill({
       'player': '#97E66C',
       'basic': '#ff0000',
@@ -136,9 +140,9 @@ class Squish extends Entity {
       'super': '',
       'hunter': '',
       'omega': '',
-      'team': '', // teammate
+      'team': '#4444ff', // teammate
       'opp': '', // opposing team
-    }[this.type]);
+    }[type]);
     stroke({
       'player': '#805909',
       'basic': '#aa2200',
@@ -146,9 +150,9 @@ class Squish extends Entity {
       'super': '',
       'hunter': '',
       'omega': '',
-      'team': '', // teammate
+      'team': '#2222aa', // teammate
       'opp': '', // opposing team
-    }[this.type]);
+    }[type]);
     strokeWeight(8);
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
     if (this.onfire > Date.now()) {
@@ -164,13 +168,24 @@ class Squish extends Entity {
       image(tex(this.holding), size * .8, s * -.75, s * 1.5, s * 1.5);
       pop();
     }
-    if (this.hp < this.maxhp) {
+    if (this.hp < this.maxhp - 5) {
       noStroke();
       fill(0);
       rect(-size * .8, -size * 1.3, size * 1.6, size * .4);
       fill(255, 0, 0);
-      rect(-size * .8, -size * 1.3, size * 1.6 *
-        (this.hp / this.maxhp), size * .4);
+      rect(-size * .8, -size * 1.3, this.hp > 0 ? size * 1.6 *
+        (this.hp / this.maxhp) : 0, size * .4);
+    }
+    if (this.player && this != player) {
+      push();
+      if (this.hp < this.maxhp - 5) translate(0, -15);
+      fill(255);
+      stroke(0);
+      strokeWeight(2);
+      textSize(12);
+      textAlign(CENTER, BOTTOM);
+      text(this.name, 0, -size * .70);
+      pop();
     }
     pop();
   }
@@ -180,6 +195,15 @@ class Squish extends Entity {
     this.hp -= x;
     if (this.hp <= 0) {
       if (!this.player) {
+        if (Math.random() < 0.15) createEntity({
+          class: 'item',
+          id: genid(),
+          type: 'bomb',
+          x: this.pos.x + Math.random() * size - size * .5,
+          y: this.pos.y + Math.random() * size - size * .5,
+          amount: Math.floor(Math.random() * 3) + 1
+        });
+
         let p = Math.floor(Math.random() * ({
           basic: 5, //points
         }[this.type] + 1));
@@ -219,25 +243,26 @@ class Squish extends Entity {
           y: this.pos.y + Math.random() * size - size * .5,
           amount: h
         });
-        if (Math.random() < 0.05) createEntity({
-          class: 'item',
-          id: genid(),
-          type: 'bomb',
-          x: this.pos.x + Math.random() * size - size * .5,
-          y: this.pos.y + Math.random() * size - size * .5,
-          amount: Math.floor(Math.random() * 3) + 1
-        });
+        // if (Math.random() < 0.01) createEntity({
+        //   class: 'item',
+        //   id: genid(),
+        //   type: 'ferret',
+        //   x: this.pos.x + Math.random() * size - size * .5,
+        //   y: this.pos.y + Math.random() * size - size * .5,
+        //   amount: 1
+        // }); // HELL NO
         this.remove();
-      } else {
-        playerdeath();
-        if (f) camera = f;
       }
-    }
+    } 
+    updateEntity(this.id, { hp: this.hp });
   }
 
   heal(x) {
+    let r = this.hp;
     this.hp += x;
     if (this.hp > this.maxhp + this.bonushp) this.hp = this.maxhp + this.bonushp;
+    if (this.hp != r) updateEntity(this.id, { hp: this.hp });
+    return (r + x) - (this.maxhp + this.bonushp);
   }
 
   getdata() {
@@ -259,6 +284,7 @@ class Bullet extends Entity {
     this.rot = data.rot;
     this.damage = data.damage || [25];
     if (pierceammo ? !bound(this.pos) : !pcoll(this.pos)) this.remove();
+    // this.colc = 0
   }
 
   draw() {
@@ -283,6 +309,7 @@ class Bullet extends Entity {
         this.remove();
       }
     });
+    this.checkup();
   }
 }
 classes.bullet = Bullet;
@@ -352,12 +379,19 @@ class Flame extends Entity {
       }
     });
     if (this.size <= 1) this.remove();
+    this.checkup();
   }
 
   onscreen(c) {
     let x = this.pos.copy().add(c);
     return x.x > -this.size * .5 && x.x < windowWidth + this.size * .5 &&
       x.y > -this.size * .5 && x.y < windowHeight + this.size * .5;
+  }
+
+  checkupplus() {
+    let s = Math.floor(this.size);
+    if (this.old.s != s) updateEntity(this.id, { size: s });
+    this.old.s = s;
   }
 }
 classes.flame = Flame;
@@ -372,11 +406,16 @@ class Bomb extends Entity {
     this.vel = data.vel || 0;
   }
 
-  draw() {
+  tick() {
     this.vel *= .97;
     let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
     if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
     else this.vel = 0;
+    if (Date.now() - this.countdown > 3e3) this.explode(this);
+    this.checkup();
+  }
+
+  draw() {
     push();
     translate(this.pos);
     let x = Date.now() - this.countdown;
@@ -389,7 +428,6 @@ class Bomb extends Entity {
           e.id != this.from) this.explode(this);
       }
     });
-    if (x > 3e3) this.explode(this);
     pop();
   }
 
@@ -406,6 +444,38 @@ class Bomb extends Entity {
 }
 classes.bomb = Bomb;
 
+class Ferret extends Bomb {
+  constructor(id, type, x, y, data = {}) {
+    super(id, type, x, y, data);
+    this.class = "ferret";
+  }
+
+  draw() {
+    this.vel *= .98;
+    let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
+    if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
+    push();
+    translate(this.pos);
+    let x = Date.now() - this.countdown;
+    image(tex((x % 400 > 200 ? 'white' : '') + 'ferret'), size * -2.5, size * -2.5, size * 5, size * 5);
+    if (x > 3000) this.explode();
+    pop();
+  }
+
+  explode() {
+    createEntity({
+      class: 'explosion',
+      id: genid(),
+      x: this.pos.x,
+      y: this.pos.y,
+      from: this.from,
+      size: 100000,
+      force: 2
+    });
+    this.remove();
+  }
+}
+// classes.ferret = Ferret;
 
 class Explosion extends Entity {
   constructor(id, type, x, y, data = {}) {
@@ -436,24 +506,35 @@ class Explosion extends Entity {
     this.size += this.force * 8;
     if (this.fade < .8) {
       Object.values(entities).forEach(e => {
-        if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
+        if (hbox(this.pos, e.pos, this.size)) {
           if (e.class == "bomb" && Date.now() - e.countdown > 500) e.explode();
-          if (!e.hp /*|| e.id == this.from*/) return;
-          let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) /
-            Math.max(this.pos.copy().sub(e.pos).magSq(), size * 4) * dt * 20 * (1 - this.fade);
-          // console.log(e.class + '.' + e.type, x);
-          if (x > 0) e.damage(x, this.from);
+          if (!e.hp) return;
+
+          let dmg = Math.random() * this.size /
+            Math.max(this.pos.copy().sub(e.pos).magSq(), size * 4) * dt * (this.force * 2.5) * (1 - this.fade);
+
+          if (dmg > 0) e.damage(dmg, this.from);
         }
       });
     }
     this.fade += this.force * 0.003 + .08;
     if (this.fade >= 1) this.remove();
+    this.checkup();
   }
 
   onscreen(c) {
     let x = this.pos.copy().add(c);
     return x.x > -this.size * .5 && x.x < windowWidth + this.size * .5 &&
       x.y > -this.size * .5 && x.y < windowHeight + this.size * .5;
+  }
+
+  checkupplus() {
+    let s = Math.floor(this.size);
+    let f = Math.floor(this.fade);
+    if (this.old.s != s) updateEntity(this.id, { size: s });
+    if (this.old.f != f) updateEntity(this.id, { fade: f });
+    this.old.s = s;
+    this.old.f = f;
   }
 }
 classes.explosion = Explosion;

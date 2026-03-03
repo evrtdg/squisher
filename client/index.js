@@ -8,8 +8,11 @@ let menu, game;
 let menubtn;
 /** @type {p5.Element} */
 let menuuser;
+let menuIndex = 0;
 let textures = {};
 let sounds = {};
+let loadstat = null;
+let font = null;
 
 let dt = 0;
 let tps = 45;
@@ -34,12 +37,19 @@ function setup() {
   textures.flamethrower.size = 2;
   textures.bomb = loadImage('assets/bomb.svg');
   textures.whitebomb = loadImage('assets/whitebomb.svg');
+  textures.ferret = loadImage('assets/ferret.jpeg');
+  textures.whiteferret = loadImage('assets/whiteferret.jpeg');
   textures.point = loadImage('assets/point.png');
   textures.ammo = loadImage('assets/ammo.png');
   textures.map = loadImage('assets/map.svg');
   textures.hp = loadImage('assets/hp.png');
+  textures.medkit = loadImage('assets/medkit.png');
   textures.missing = loadImage('assets/missing.png');
-  sounds.missing = loadSound('assets/missing.mp3');
+  sounds.missing = loadSound('assets/sounds/missing.mp3');
+  sounds.start = loadSound('assets/sounds/start.mp3');
+  // sounds.tread_carefully = loadSound('assets/sounds/tread_carefully.mp3');
+  // sounds.jets_average = loadSound('assets/sounds/jets_average.mp3');
+  font = loadFont('assets/prodsans.ttf');
   switchmenu('menu');
 }
 
@@ -53,6 +63,21 @@ function play(n, v = .5) {
   s.playMode('sustain');
   s.setVolume(v);
   s.play();
+  return s;
+}
+
+let songs = ["tread_carefully", "jets_average"];
+let playing = null;
+function music(song = 0) {
+  let s = play(songs[song]);
+  if (menu == "pause") s.pause();
+  playing = s;
+  s.onended(() => {
+    playing = null;
+    setTimeout(() => {
+      if (!playing) music((song + 1) % songs.length);
+    }, 500);
+  });
 }
 
 function windowResized() {
@@ -60,14 +85,26 @@ function windowResized() {
 }
 
 function draw() {
+  updateGamepad();
+  if (font) textFont(font);
   if (menu == 'menu') {
+    background(255);
     fill(255, 0, 0);
+    push();
     rect(20, 20, 20);
+    fill(255);
+    stroke(0);
+    strokeWeight(2);
+    textSize(16);
+    textAlign(LEFT, TOP);
+    text(" !    IN DEV", 24, 20);
+    pop();
   } else if (menu == 'game') {
     dt += deltaTime;
     if (dt > itps) {
       if (dt > 100) dt = 100;
       tickgame();
+      mptick();
       dt = dt % itps;
     }
     drawgame(true);
@@ -79,6 +116,16 @@ function draw() {
       dt = dt % pdps;
     }
     drawpause();
+  }
+  if (loadstat) {
+    push();
+    fill(255);
+    stroke(0);
+    strokeWeight(2);
+    textSize(20);
+    textAlign(RIGHT, TOP);
+    text(loadstat, innerWidth - 10, 10);
+    pop();
   }
 }
 
@@ -114,11 +161,14 @@ async function switchmenu(m, g) {
   if (m == menu) return;
   if (g) game = g;
   if (menu == 'menu') removemenu();
-  if (m == 'game' && menu == 'menu') await initgame();
+  if (m == 'game' && menu == 'menu') if (!await initgame()) return initmenu();
   menu = m;
   if (menu == 'menu') initmenu();
+  if (menu == "pause" && playing) playing.pause();
+  if (menu == "game" && playing) playing.play();
 }
 
+let lk = "";
 function keyPressed() {
   let k = key.toLowerCase();
   keys[k] = true;
@@ -127,8 +177,13 @@ function keyPressed() {
     holding = (holding + 1) % inventory.length;
     updateinv();
   }
-  if (k == '~' && player && menu == "game") cheats();
+  if (k == '~' && player && menu == "game") cheats(lk == "z");
   if (k == 'escape' && player) switchmenu(menu == 'pause' ? 'game' : 'pause');
+  if (parseInt(k) <= inventory?.length) {
+    holding = parseInt(k) - 1;
+    updateinv()
+  }
+  lk = k;
 }
 
 function keyReleased() {
@@ -155,6 +210,75 @@ function mousePressed() {
 function mouseReleased() {
   key = 'mouse' + mouseButton;
   keyReleased();
+}
+
+function updateGamepad() {
+  const gamepads = navigator.getGamepads();
+  const gp = gamepads[0];
+
+  if (!gp) return;
+
+  if (menu == 'menu') {
+    let stickDown = gp.axes[1] > 0.5 || gp.buttons[13].pressed;
+    let stickUp = gp.axes[1] < -0.5 || gp.buttons[12].pressed;
+
+    if ((stickDown || stickUp) && !keys.gpMenu) {
+      menubtn.forEach(btn => btn.removeClass('selected'));
+      if (stickDown) menuIndex = (menuIndex + 1) % menubtn.length;
+      if (stickUp) menuIndex = (menuIndex - 1 + menubtn.length) % menubtn.length;
+
+      menubtn[menuIndex].addClass('selected');
+      menubtn[menuIndex].elt.focus();
+      play('select', 0.1);
+      keys.gpMenu = true;
+    } else if (!stickDown && !stickUp) {
+      keys.gpMenu = false;
+    }
+
+    if (gp.buttons[0].pressed && !keys.gpConfirm) {
+      menubtn[menuIndex].elt.click();
+      keys.gpConfirm = true;
+    } else if (!gp.buttons[0].pressed) {
+      keys.gpConfirm = false;
+    }
+  }
+
+  if (menu == 'game' && player) {
+
+    if (player.dead) {
+      if (gp.buttons[0].pressed && !keys.gpRespawn) {
+        playerspawn();
+        keys.gpRespawn = true;
+      } else if (!gp.buttons[0].pressed) {
+        keys.gpRespawn = false;
+      }
+      return;
+    }
+
+    keys['a'] = gp.axes[0] < -0.3;
+    keys['d'] = gp.axes[0] > 0.3;
+    keys['w'] = gp.axes[1] < -0.3;
+    keys['s'] = gp.axes[1] > 0.3;
+
+
+    let rsX = gp.axes[2];
+    let rsY = gp.axes[3];
+    if (Math.abs(rsX) > 0.2 || Math.abs(rsY) > 0.2) {
+      player.rotation = Math.atan2(rsY, rsX);
+    }
+
+    keys[' '] = gp.buttons[7].pressed;
+
+    if (gp.buttons[4].pressed || gp.buttons[5].pressed) {
+      if (!keys.gpCycle) {
+        holding = (holding + 1) % inventory.length;
+        updateinv();
+        keys.gpCycle = true;
+      }
+    } else {
+      keys.gpCycle = false;
+    }
+  }
 }
 
 function drawpause() {

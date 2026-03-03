@@ -13,11 +13,10 @@ class Item extends Entity {
     pop();
   }
 
-  tick() {
+  tickall() {
     if (itemmagnet && hbox(this.pos, player.pos, size * 8) && !player.dead)
       this.pos.add(player.pos.copy().sub(this.pos).setMag(5000 / player.pos.copy().sub(this.pos).magSq()));
     if (hbox(player.pos, this.pos, size * 2) && !player.dead) {
-      if (mp) callEvent('delete', this.id);
       this.remove();
       if (this.type == 'point') {
         points += this.amount;
@@ -25,7 +24,11 @@ class Item extends Entity {
         return;
       }
       if (this.type == 'ammo') return ammo += this.amount;
-      if (this.type == 'hp') return player.heal(this.amount);
+      if (this.type == 'hp') {
+        let r = Math.floor(player.heal(this.amount) / 4);
+        // if (r > 0) give("medkit", r);
+        return;
+      }
       give(this.type, this.amount);
     }
   }
@@ -46,7 +49,7 @@ function give(type, amount = 1) {
   });
   if (!y) {
     inventory.push([type, amount]);
-    holding = inventory.length - 1;
+    if (type != "medkit") holding = inventory.length - 1;
   }
   updateinv();
 }
@@ -65,6 +68,22 @@ function useitem() {
     let v = createVector(size * 1.5, 0).setHeading(player.rotation).add(player.pos);
     createEntity({
       class: 'bomb',
+      id: genid(),
+      x: v.x,
+      y: v.y,
+      from: player.id,
+      rot: player.rotation + Math.random() * .2 - .1, 
+      vel: size * .075
+    });
+  }
+  if (player.holding == 'ferret' && inventory[holding][1] > 0 &&
+    Date.now() - player.cooldown >= 10 && firstshot) {
+    player.cooldown = Date.now();
+    inventory[holding][1]--;
+    updateinv();
+    let v = createVector(size * 1.5, 0).setHeading(player.rotation).add(player.pos);
+    createEntity({
+      class: 'ferret',
       id: genid(),
       x: v.x,
       y: v.y,
@@ -130,5 +149,7 @@ function updateinv() {
   });
   if (holding >= inventory.length) holding = inventory.length - 1;
   if (holding < 0) holding = 0;
+  let o = player.holding;
   player.holding = inventory[holding]?.[0] || null;
+  if (o != player.holding) updateEntity(player.id, {holding: player.holding})
 }

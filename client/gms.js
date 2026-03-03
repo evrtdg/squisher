@@ -19,3 +19,15 @@ function classictick() {
 function classicdraw() {
 
 }
+
+function fightinit() {
+  playerspawn();
+}
+
+function fighttick() {
+  
+}
+
+function fightdraw() {
+  
+}
