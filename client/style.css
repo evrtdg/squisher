@@ -31,6 +31,10 @@ body {
   cursor: pointer;
 }
 
+#gms>button.selected {
+  border: 4px solid #ff0000;
+}
+
 #rainbow {
   border: none;
   font-size: 80px;

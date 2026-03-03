@@ -8,6 +8,7 @@ let menu, game;
 let menubtn;
 /** @type {p5.Element} */
 let menuuser;
+let menuIndex = 0;
 let textures = {};
 let sounds = {};
 
@@ -63,6 +64,7 @@ function windowResized() {
 }
 
 function draw() {
+  updateGamepad();
   if (menu == 'menu') {
     fill(255, 0, 0);
     push();
@@ -172,6 +174,75 @@ function mousePressed() {
 function mouseReleased() {
   key = 'mouse' + mouseButton;
   keyReleased();
+}
+
+function updateGamepad() {
+  const gamepads = navigator.getGamepads();
+  const gp = gamepads[0];
+  
+  if (!gp) return; 
+
+  if (menu == 'menu') {
+    let stickDown = gp.axes[1] > 0.5 || gp.buttons[13].pressed; 
+    let stickUp = gp.axes[1] < -0.5 || gp.buttons[12].pressed;
+
+    if ((stickDown || stickUp) && !keys.gpMenu) {
+      menubtn.forEach(btn => btn.removeClass('selected'));
+      if (stickDown) menuIndex = (menuIndex + 1) % menubtn.length;
+      if (stickUp) menuIndex = (menuIndex - 1 + menubtn.length) % menubtn.length;
+      
+      menubtn[menuIndex].addClass('selected');
+      menubtn[menuIndex].elt.focus();
+      play('missing', 0.1); 
+      keys.gpMenu = true;
+    } else if (!stickDown && !stickUp) {
+      keys.gpMenu = false;
+    }
+
+    if (gp.buttons[0].pressed && !keys.gpConfirm) {
+      menubtn[menuIndex].elt.click(); 
+      keys.gpConfirm = true;
+    } else if (!gp.buttons[0].pressed) {
+      keys.gpConfirm = false;
+    }
+  }
+
+  if (menu == 'game' && player) {
+
+    if (player.dead) {
+      if (gp.buttons[0].pressed && !keys.gpRespawn) {
+        playerspawn();
+        keys.gpRespawn = true;
+      } else if (!gp.buttons[0].pressed) {
+        keys.gpRespawn = false;
+      }
+  return; 
+}
+
+    keys['a'] = gp.axes[0] < -0.3;
+    keys['d'] = gp.axes[0] > 0.3;
+    keys['w'] = gp.axes[1] < -0.3;
+    keys['s'] = gp.axes[1] > 0.3;
+
+
+    let rsX = gp.axes[2];
+    let rsY = gp.axes[3];
+    if (Math.abs(rsX) > 0.2 || Math.abs(rsY) > 0.2) {
+      player.rotation = Math.atan2(rsY, rsX);
+    }
+
+    keys[' '] = gp.buttons[7].pressed;
+
+    if (gp.buttons[4].pressed || gp.buttons[5].pressed) {
+      if (!keys.gpCycle) {
+        holding = (holding + 1) % inventory.length;
+        updateinv();
+        keys.gpCycle = true;
+      }
+    } else {
+      keys.gpCycle = false;
+    }
+  }
 }
 
 function drawpause() {
