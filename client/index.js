@@ -45,7 +45,10 @@ function setup() {
   textures.hp = loadImage('assets/hp.png');
   textures.medkit = loadImage('assets/medkit.png');
   textures.missing = loadImage('assets/missing.png');
-  sounds.missing = loadSound('assets/missing.mp3');
+  sounds.missing = loadSound('assets/sounds/missing.mp3');
+  sounds.start = loadSound('assets/sounds/start.mp3');
+  // sounds.tread_carefully = loadSound('assets/sounds/tread_carefully.mp3');
+  // sounds.jets_average = loadSound('assets/sounds/jets_average.mp3');
   font = loadFont('assets/prodsans.ttf');
   switchmenu('menu');
 }
@@ -60,6 +63,21 @@ function play(n, v = .5) {
   s.playMode('sustain');
   s.setVolume(v);
   s.play();
+  return s;
+}
+
+let songs = ["tread_carefully", "jets_average"];
+let playing = null;
+function music(song = 0) {
+  let s = play(songs[song]);
+  if (menu == "pause") s.pause();
+  playing = s;
+  s.onended(() => {
+    playing = null;
+    setTimeout(() => {
+      if (!playing) music((song + 1) % songs.length);
+    }, 500);
+  });
 }
 
 function windowResized() {
@@ -146,6 +164,8 @@ async function switchmenu(m, g) {
   if (m == 'game' && menu == 'menu') if (!await initgame()) return initmenu();
   menu = m;
   if (menu == 'menu') initmenu();
+  if (menu == "pause" && playing) playing.pause();
+  if (menu == "game" && playing) playing.play();
 }
 
 let lk = "";

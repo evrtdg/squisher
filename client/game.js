@@ -64,6 +64,8 @@ async function initgame() {
   camera = player.id;
   xlmt = tex(map).width;
   ylmt = tex(map).height;
+  if (playing) playing.pause();
+  playing = null;
   if (game == 'classic') classicinit();
   if (game == 'fight') fightinit();
   loadstat = null;

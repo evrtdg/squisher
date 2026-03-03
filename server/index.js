@@ -77,6 +77,9 @@ wss.on('connection', ws => {
           if (s.update[x]) delete s.update[x];
         });
         break;
+      case "ping":
+        send(ws, {type: "pong", time: Date.now()});
+        break;
     }
   });
   ws.on('close', () => {

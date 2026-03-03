@@ -147,3 +147,5 @@ function sendPacket() {
   }
   clearPacket();
 }
+
+setInterval(() => send({ type: "ping", time: Date.now() }), 30e3);
