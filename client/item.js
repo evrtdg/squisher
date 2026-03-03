@@ -13,11 +13,10 @@ class Item extends Entity {
     pop();
   }
 
-  tick() {
+  tickall() {
     if (itemmagnet && hbox(this.pos, player.pos, size * 8) && !player.dead)
       this.pos.add(player.pos.copy().sub(this.pos).setMag(5000 / player.pos.copy().sub(this.pos).magSq()));
     if (hbox(player.pos, this.pos, size * 2) && !player.dead) {
-      if (mp) callEvent('delete', this.id);
       this.remove();
       if (this.type == 'point') {
         points += this.amount;

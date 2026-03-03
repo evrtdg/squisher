@@ -11,6 +11,8 @@ let menuuser;
 let menuIndex = 0;
 let textures = {};
 let sounds = {};
+let loadstat = null;
+let font = null;
 
 let dt = 0;
 let tps = 45;
@@ -44,6 +46,7 @@ function setup() {
   textures.medkit = loadImage('assets/medkit.png');
   textures.missing = loadImage('assets/missing.png');
   sounds.missing = loadSound('assets/missing.mp3');
+  font = loadFont('assets/prodsans.ttf');
   switchmenu('menu');
 }
 
@@ -65,7 +68,9 @@ function windowResized() {
 
 function draw() {
   updateGamepad();
+  if (font) textFont(font);
   if (menu == 'menu') {
+    background(255);
     fill(255, 0, 0);
     push();
     rect(20, 20, 20);
@@ -74,13 +79,14 @@ function draw() {
     strokeWeight(2);
     textSize(16);
     textAlign(LEFT, TOP);
-    text(" !   IN DEV", 23, 23);
+    text(" !    IN DEV", 24, 20);
     pop();
   } else if (menu == 'game') {
     dt += deltaTime;
     if (dt > itps) {
       if (dt > 100) dt = 100;
       tickgame();
+      mptick();
       dt = dt % itps;
     }
     drawgame(true);
@@ -92,6 +98,16 @@ function draw() {
       dt = dt % pdps;
     }
     drawpause();
+  }
+  if (loadstat) {
+    push();
+    fill(255);
+    stroke(0);
+    strokeWeight(2);
+    textSize(20);
+    textAlign(RIGHT, TOP);
+    text(loadstat, innerWidth - 10, 10);
+    pop();
   }
 }
 
@@ -127,7 +143,7 @@ async function switchmenu(m, g) {
   if (m == menu) return;
   if (g) game = g;
   if (menu == 'menu') removemenu();
-  if (m == 'game' && menu == 'menu') await initgame();
+  if (m == 'game' && menu == 'menu') if (!await initgame()) return initmenu();
   menu = m;
   if (menu == 'menu') initmenu();
 }
@@ -179,28 +195,28 @@ function mouseReleased() {
 function updateGamepad() {
   const gamepads = navigator.getGamepads();
   const gp = gamepads[0];
-  
-  if (!gp) return; 
+
+  if (!gp) return;
 
   if (menu == 'menu') {
-    let stickDown = gp.axes[1] > 0.5 || gp.buttons[13].pressed; 
+    let stickDown = gp.axes[1] > 0.5 || gp.buttons[13].pressed;
     let stickUp = gp.axes[1] < -0.5 || gp.buttons[12].pressed;
 
     if ((stickDown || stickUp) && !keys.gpMenu) {
       menubtn.forEach(btn => btn.removeClass('selected'));
       if (stickDown) menuIndex = (menuIndex + 1) % menubtn.length;
       if (stickUp) menuIndex = (menuIndex - 1 + menubtn.length) % menubtn.length;
-      
+
       menubtn[menuIndex].addClass('selected');
       menubtn[menuIndex].elt.focus();
-      play('missing', 0.1); 
+      play('select', 0.1);
       keys.gpMenu = true;
     } else if (!stickDown && !stickUp) {
       keys.gpMenu = false;
     }
 
     if (gp.buttons[0].pressed && !keys.gpConfirm) {
-      menubtn[menuIndex].elt.click(); 
+      menubtn[menuIndex].elt.click();
       keys.gpConfirm = true;
     } else if (!gp.buttons[0].pressed) {
       keys.gpConfirm = false;
@@ -216,8 +232,8 @@ function updateGamepad() {
       } else if (!gp.buttons[0].pressed) {
         keys.gpRespawn = false;
       }
-  return; 
-}
+      return;
+    }
 
     keys['a'] = gp.axes[0] < -0.3;
     keys['d'] = gp.axes[0] > 0.3;

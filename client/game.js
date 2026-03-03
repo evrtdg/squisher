@@ -32,19 +32,30 @@ let ammo = 0;
 let score = 0;
 
 async function initgame() {
+  console.log("init", game);
   entities = {};
+  loadstat = "connecting";
   mp = false;
-  if (game != 'classic') if (!await connect(game)) {
-    alert('Server is offline. Play classic mode instead.');
-    switchmenu('menu');
-    return;
-  } else mp = true;
+  if (game != 'classic') {
+    if (!ws || ws?.readyState != ws?.OPEN) {
+      let x = await connect(game);
+      if (x) {
+        switchmenu('menu');
+        loadstat = x;
+        return false;
+      }
+    } else {
+      joinGame(game);
+    }
+  }
+  loadstat = "initializing";
   player = createEntity({
     class: 'squish',
     id: genid(),
     type: 'player',
     x: 0,
-    y: 0
+    y: 0,
+    name: username
   });
   inventory = [];
   holding = 0;
@@ -54,10 +65,16 @@ async function initgame() {
   xlmt = tex(map).width;
   ylmt = tex(map).height;
   if (game == 'classic') classicinit();
+  if (game == 'fight') fightinit();
+  loadstat = null;
+  return true;
 }
 
 function tickgame() {
-  Object.values(entities).reverse().forEach(x => { if (!x.removed && x.OWNER == username) x.tick() });
+  Object.values(entities).reverse().forEach(x => { 
+    if (!x.removed && x.OWNER == username) x.tick(); 
+    if (x.tickall) x.tickall(); 
+  });
   if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e) {
     useitem();
     firstshot = false;
@@ -71,6 +88,7 @@ function tickgame() {
     player.rotation += rotamt;
   }
   if (game == 'classic') classictick();
+  if (game == 'fight') fighttick();
 }
 
 function drawgame(ingame) {
@@ -83,6 +101,7 @@ function drawgame(ingame) {
   drawmap(ingame);
   Object.values(entities).filter(x => x.onscreen(cam)).reverse().forEach(x => x.draw(ingame));
   if (game == 'classic') classicdraw(ingame);
+  if (game == 'fight') fightdraw(ingame);
   pop();
   if (ingame) drawhud();
 }
@@ -111,7 +130,9 @@ function drawhud() {
   }
   a = a.join('');
   text(`points: ${points}\nhealth: ${Math.floor(player.hp)}` +
-    `\nammo: ${a}`, 10, 10);
+    `\nammo: ${a}` + (mp ? '\n\n' + Object.entries(users).map(x => 
+      x[0] + (x[1] && !x[1].dead ? "" : " (dead)")
+    ).join('\n') : ''), 10, 10);
   pop();
   inventory.forEach((x, i) => {
     stroke(0);
@@ -150,6 +171,11 @@ function playerspawn() {
   player.dead = false;
   player.hp = player.maxhp;
   player.holding = null;
+  updateEntity(player.id, {
+    dead: player.dead,
+    hp: player.hp,
+    holding: player.holding
+  });
   camera = player.id;
   updateinv();
   player.pos.set(spawnzone('player'));
@@ -172,6 +198,9 @@ function playerspawn() {
 
 function playerdeath() {
   player.dead = true;
+  updateEntity(player.id, {
+    dead: true
+  });
   inventory.forEach(x => {
     if (x[0]) createEntity({
       class: 'item',

@@ -1,3 +1,4 @@
+const DEBUG = 0;
 require('dotenv').config({ quiet: true });
 const static = new (require('node-static').Server)('./client');
 const server = require('http').createServer((req, res) => {
@@ -5,32 +6,30 @@ const server = require('http').createServer((req, res) => {
     static.serve(req, res);
 });
 const wss = new (require('ws').Server)({ server });
-const rooms = {
-  test: {
-    users: {}
-  }
-};
+
+const rooms = {};
+
+const sendinterval = 10;
+
 wss.on('connection', ws => {
+  console.log("new conn");
   ws.mode = null;
   ws.name = null;
-  ws.room = 'test';
-  ws.packet = {
-    create: [],
-    delete: [],
-    update: [],
-    event: []
-  };
+  ws.room = null;
+  ws.plent = null;
+  ws.packet;
   ws.on('message', d => {
     let data;
     try {
       data = JSON.parse(d);
+      if (DEBUG) console.log(ws.name, ">", data);
     } catch (e) { return };
     switch (data.type) {
       case 'join':
         if (ws.room) return;
-        if (data.name.length < 2 || data.name.length > 16) return send(ws, {
+        if (data.username?.length < 2 || data.username?.length > 16) return send(ws, {
           type: 'alert',
-          message: data.name?.length < 2 ? 'name too short' : 'name too long'
+          message: data.username?.length < 2 ? 'name too short' : 'name too long'
         });
         let nameused = false;
         wss.clients.forEach(w => { if (w.name == data.username) nameused = true });
@@ -50,17 +49,39 @@ wss.on('connection', ws => {
         break;
       case 'packet':
         if (!ws.room) return;
+        let b = data.packet;
+        if (b.create) {
+          let x = b.create.findIndex(x => x.class == "squish" && x.type == "player");
+          if (x >= 0) {
+            if (this.plent || b.create[x].name != ws.name) b.splice(x, 1);
+            else this.plent = x.id;
+          }
+        }
+        if (b.delete && b.delete.includes(this.plent)) this.plent = null;
         Object.entries(rooms[ws.room].users).forEach(x => {
           if (x[0] != ws.name) {
-            let p = x[1].packet;
-            p.create.push();
+            let a = x[1].packet;
+            if (b.create) a.create.push(...b.create);
+            if (b.update) a.update.push(...b.update);
+            if (b.delete) a.delete.push(...b.delete);
+            if (b.event) a.event.push(...b.event.map(x => [ws.name, ...x]));
+            if (b.vars) a.vars = {...a.vars, ...b.vars};
           }
+        });
+        let s = rooms[ws.room].state;
+        if (b.vars) Object.entries(b.vars).forEach(x => s.vars[x[0]] = x[1]);
+        if (b.create) b.create.forEach(x => s.create[x.id] = x);
+        if (b.update) b.update.forEach(x => s.update[x[0]] = s.update[x[0]] ? {...s.update[x[0]], ...x[1]} : x[1]);
+        if (b.delete) b.delete.forEach(x => {
+          if (s.create[x]) delete s.create[x];
+          if (s.update[x]) delete s.update[x];
         });
         break;
     }
   });
   ws.on('close', () => {
     if (ws.room) leaveRoom(ws);
+    console.log(ws.name, "disconnected");
   })
 });
 server.listen(process.env.PORT || 59015);
@@ -69,23 +90,51 @@ function joinRoom(ws, name, room, mode) {
   ws.name = name;
   if (!rooms[room]) createRoom(room, mode);
   let r = rooms[room];
-  if (r.mode != mode) return 'fuck';
+  if (r.mode != mode) return 'room already exist on different gamemode';
   ws.mode = mode;
   ws.room = room;
+  clearPacket(ws);
   emit(room, {
     type: 'join',
     name: ws.name,
   });
   r.users[name] = ws;
-  send()
+  send(ws, {
+    type: "youjoin",
+    create: Object.values(r.state.create),
+    update: r.state.update,
+    vars: r.state.vars,
+    users: Object.values(r.users).map(x => x.name)
+  });
+  console.log(ws.name, "joined", ws.room);
+}
+
+function createRoom(room, mode) {
+  rooms[room] = {
+    users: {},
+    state: {
+      create: {},
+      update: {},
+      vars: {}
+    },
+    mode
+  }
+  return rooms[room];
 }
 
 function leaveRoom(ws) {
+  console.log(ws.name, "left", ws.room);
   delete rooms[ws.room].users[ws.name];
   emit(ws.room, {
     type: 'leave',
     name: ws.name
   });
+  if (Object.keys(rooms[ws.room].users).length == 0) {
+    delete rooms[ws.room];
+    console.log(ws.room, "destroyed");
+  }
+  ws.room = null;
+  ws.plent = null;
 }
 
 function emit(room, data) {
@@ -94,4 +143,28 @@ function emit(room, data) {
 
 function send(ws, data) {
   ws.send(JSON.stringify(data));
+  if (DEBUG) console.log(ws.name, "<", data);
+}
+
+setInterval(() => Object.values(rooms).forEach(room => Object.values(room.users).forEach(ws => {
+  let packet = ws.packet;
+  if (!packet.create.length) delete packet.create;
+  if (!packet.update.length) delete packet.update;
+  if (!packet.delete.length) delete packet.delete;
+  if (!packet.event.length) delete packet.event;
+  if (!packet.vars.length) delete packet.vars;
+  if (Object.keys(packet).length != 0) {
+    send(ws, {type: "packet", ...packet});
+  }
+  clearPacket(ws);
+})), sendinterval);
+
+function clearPacket(ws) {
+  ws.packet = {
+    create: [],
+    delete: [],
+    update: [],
+    event: [],
+    vars: {},
+  };
 }
