@@ -4,8 +4,10 @@ const static = new (require('node-static').Server)('./client');
 const server = require('http').createServer(async (req, res) => {
   if (process.env.DEV)
     static.serve(req, res);
-  else if (req.url == "/" + process.env.UPDATE_TOKEN)
-    require("child_process").spawn('bash', '-c', 'git pull; pm2 restart squisher');
+  else if (req.url == "/" + process.env.UPDATE_TOKEN) {
+    require("child_process").exec('bash -c "git pull; pm2 restart squisher"');
+    res.writeHead(200).end();
+  }
 });
 const wss = new (require('ws').Server)({ server });
 
