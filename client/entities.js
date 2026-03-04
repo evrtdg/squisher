@@ -369,7 +369,7 @@ class Flame extends Entity {
     this.vel = data.vel || 0;
     this.size = data.size || size;
     this.dissize = this.size;
-    this.svel = this.vel * .8;
+    this.svel = this.vel * 1.2;
   }
 
   draw() {
@@ -398,24 +398,28 @@ class Flame extends Entity {
     let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
     if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
     else this.vel = 0;
-    this.svel *= .89;
+    this.svel *= .95;
     this.size += this.svel * 3;
     this.size -= 50 / this.size;
     Object.values(entities).forEach(e => {
-      if (e.class == 'flame' && e != this && this.size > e.size &&
-        hbox(this.pos, e.pos, Math.min(this.size, size * 12) * .5 + e.size * .5)) {
-        this.pos.add(e.pos.copy().sub(this.pos).mult(.01));
-        e.size -= 1;
-        this.size += .8;
+      if (e.class == 'flame' && e != this && this.size > e.size && hbox(this.pos,
+        e.pos, Math.min(this.size, size * 12) * .5 + e.size * .5)) {
+        if (this.size < 300) this.pos.add(e.pos.copy().sub(this.pos).mult(.01));
+        if (this.size > 400) this.pos.sub(e.pos.copy().sub(this.pos)
+          .div(e.pos.copy().sub(this.pos).magSq()).mult(30));
+        if (this.size < 500) {
+          e.size -= 1;
+          this.size += .8;
+        }
         return;
       }
       if (!e.hp /*|| e.id == this.from*/) return;
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 4)) && e.class == 'squish') {
         let x = Math.max(0, (e.onfire || 0) - Date.now());
         // x = x * x;
-        x = x * .4 + dt * Math.max(this.vel * this.vel, size) * .8;
+        x = x * .4 + dt * Math.max(this.vel * this.vel * 4, size) * .8;
         // x = Math.sqrt(x);
-        e.onfire = Math.min(x, 3e3) + Date.now();
+        e.onfire = Math.min(x, 1e3) * 3 + Date.now();
         this.vel = Math.max(this.vel - .00006 * x, 0);
       }
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
@@ -423,7 +427,7 @@ class Flame extends Entity {
           Math.max(this.pos.copy().sub(e.pos).mag(), size * 4) * dt * .002;
         // console.log(e.class + '.' + e.type, x);
         e.damage(x, this.from);
-        this.svel *= 1 - x * .01;
+        this.svel *= 1 - x * .1;
       }
     });
     if (this.size <= 1) this.remove();

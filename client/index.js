@@ -222,6 +222,8 @@ function updategamepad() {
   GP.zl = gp.buttons[6].pressed;
   GP.zr = gp.buttons[7].pressed;
   GP.menu = gp.buttons[8].pressed || gp.buttons[9].pressed;
+  GP.ma = gp.buttons[16].pressed;
+  GP.mb = gp.buttons[17].pressed || gp.buttons[10].pressed;
   
   GP.ls = createVector(gp.axes[0], gp.axes[1]);
   GP.rs = createVector(gp.axes[2], gp.axes[3]);
@@ -235,7 +237,8 @@ function updategamepad() {
   for (const key in GP) {
     if (key == "rs" || key == "ls" || key == "cd" || !GP[key] || GPold[key]) continue;
 
-    if (key == "menu") switchmenu(menu == 'pause' ? 'game' : 'pause');
+    if (key == "menu" && (menu == "pause" || menu == "game")) 
+      switchmenu(menu == 'pause' ? 'game' : 'pause');
     if (menu != "game") continue;
 
     let x = inventory.length;
@@ -243,6 +246,8 @@ function updategamepad() {
     if (key == "r" || key == "y") updateinv(holding = ++holding % x);
 
     if (player && player.dead) playerspawn();
+
+    if (key == "ma" && GP.mb) cheats();
   }
   // if ((GP.l || GP.r) && (keytimes.gpturn || 0) < Date.now() && menu == "game") {
   //   player.rotation += (GP.r - GP.l) * rotamt;

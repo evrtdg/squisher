@@ -57,7 +57,7 @@ function give(type, amount = 1) {
 function useitem() {
   if (player.holding == 'pistol' && Date.now() - player.cooldown >= 250 && firstshot && ammo >= .5) {
     player.cooldown = Date.now();
-    makebullet(powerammo ? [25] : [15, 5], Math.PI * .05, 1);
+    makebullet(powerammo ? [25, 5] : [18, 9], Math.PI * .05, 1);
     ammo -= .5;
   }
   if (player.holding == 'bomb' && inventory[holding][1] > 0 &&
@@ -72,7 +72,7 @@ function useitem() {
       x: v.x,
       y: v.y,
       from: player.id,
-      rot: player.rotation + Math.random() * .2 - .1, 
+      rot: player.rotation + Math.random() * .2 - .1,
       vel: size * .075
     });
   }
@@ -151,7 +151,7 @@ function updateinv() {
   if (holding < 0) holding = 0;
   let o = player.holding;
   player.holding = inventory[holding]?.[0] || null;
-  if (o != player.holding) updateEntity(player.id, {holding: player.holding})
+  if (o != player.holding) updateEntity(player.id, { holding: player.holding })
 }
 
 function altitem() {
@@ -167,8 +167,13 @@ function altitem() {
       x: v.x,
       y: v.y,
       from: player.id,
-      rot: player.rotation + Math.random() * .2 - .1, 
+      rot: player.rotation + Math.random() * .2 - .1,
       vel: size * .005
     });
+  }
+  if (player.holding == 'flamethrower' && Date.now() - player.cooldown >= 150 && ammo >= 1.5) {
+    Object.values(entities).filter(f => hbox(f.pos, player.pos, Math.min(f.size, size * 12))).forEach(f =>
+      f.svel -= Math.max(size * 12 - f.pos.copy().sub(this.pos).mag(), size * 4) * 0.00002 * dt);
+    if (player.onfire > Date.now()) player.onfire -= dt * 2;
   }
 }
