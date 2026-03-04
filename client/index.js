@@ -5,7 +5,6 @@ let keys = {};
 let keytimes = {};
 let menu, game;
 /** @type {Array.<p5.Element>} */
-let menubtn;
 /** @type {p5.Element} */
 let menuuser;
 let textures = {};
@@ -22,7 +21,6 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   menu = null;
   game = null;
-  menubtn = [];
   textures.map = loadImage('assets/map.svg');
   textures.pistol = loadImage('assets/pistol.png');
   textures.shotgun = loadImage('assets/shotgun.svg');
@@ -137,31 +135,18 @@ function draw() {
 }
 
 function initmenu() {
-  menubtn.push(...[
-    createButton('Classic mode (singleplayer)').id('classic'),
-    createButton('Fighting mode (multiplayer)').id('fight'),
-  ]);
-  createElement('div', 'Squisher').id('rainbow').parent('gms');
-  menubtn.forEach(b => {
-    b.parent('gms');
-    createElement('br').parent('gms');
-    b.elt.onclick = () => {
-      switchmenu('game', b.id());
-    }
-  });
-  menuuser = createInput(username);
-  menuuser.attribute('placeholder', 'Username');
-  createElement('br').parent('gms');
-  menuuser.parent('gms');
-  menuuser.elt.focus();
+  document.querySelector('#gms').classList.remove("hidden");
+  document.querySelector('#classicbtn').onclick = () => switchmenu('game', 'classic');
+  document.querySelector('#fightbtn').onclick = () => switchmenu('game', 'fight');
+  menuuser = document.querySelector('#username');
+  menuuser.value = username;
+  menuuser.focus();
 }
 
 function removemenu() {
-  username = menuuser.value();
+  username = menuuser.value;
   if (window.localStorage) localStorage.username = username;
-  document.querySelector('#gms').innerHTML = '';
-  menubtn = [];
-  menuuser = null;
+  document.querySelector('#gms').classList.add("hidden");
 }
 
 async function switchmenu(m, g) {

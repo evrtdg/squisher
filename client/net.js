@@ -20,10 +20,12 @@ function connect(mode) {
   ws.onmessage = x => handlemsg(JSON.parse(x.data));
   return new Promise(y => {
     ws.onopen = () => {
-      joinGame(mode);
+      if (mode) joinGame(mode);
       ws.onclose = () => {
-        switchmenu("menu");
-        loadstat = "Disconnected from server.";
+        if (mp) {
+          switchmenu("menu");
+          loadstat = "Disconnected from server.";
+        } //else setTimeout(connect, 10e3);
       }
     }
     ws.onclose = () => y("Server is offline. You can play classic mode instead.");
@@ -33,13 +35,12 @@ function connect(mode) {
 }
 
 function joinGame(mode) {
-  send({
-    type: 'join', username, mode
-  });
+  send({ type: 'join', username, mode });
 }
 
 function leaveGame() {
   send({ type: 'leave' });
+  switchmenu("menu");
 }
 
 function send(data) {
@@ -55,7 +56,7 @@ function handlemsg(data) {
       else alert(data.message);
       break;
     case 'youjoin':
-      cdcb(false);
+      if (cdcb) cdcb(false);
       cdcb = null;
       mp = true;
       data.users.forEach(u => users[u] = true);
@@ -72,7 +73,6 @@ function handlemsg(data) {
       break;
     case 'join':
       users[data.name] = true;
-      console.log(data.name);
       break;
     case 'leave':
       delete users[data.name];
@@ -160,5 +160,5 @@ function sendPacket() {
 }
 
 setInterval(() => {
-  if (mp) send({ type: "ping", time: Date.now() });
+  if (ws && ws.readyState == ws.OPEN) send({ type: "ping", time: Date.now() });
 }, 30e3);

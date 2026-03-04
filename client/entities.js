@@ -113,7 +113,7 @@ class Squish extends Entity {
         if (GP.ls && GP.ls.magSq() > 0.1) m.add(GP.ls.mult(2));
         if (GP.dp) m.add(GP.dp.mult(2));
         m.set(
-          Math.min(Math.max(m.x, -1), 1), 
+          Math.min(Math.max(m.x, -1), 1),
           Math.min(Math.max(m.y, -1), 1)
         );
         m.mult(dt * speed);
@@ -122,7 +122,7 @@ class Squish extends Entity {
       }
     }
     if (this.player) return this.checkup();
-    let touching = (mp ? Object.values(users) : [player]).find(x => 
+    let touching = (mp ? Object.values(users) : [player]).find(x =>
       x === true ? false : hbox(this.pos, x.pos) && !x.dead);
     if (touching) {
       if (Date.now() - this.cooldown > 100) {
@@ -151,7 +151,7 @@ class Squish extends Entity {
 
   checkupplus() {
     let r = Math.floor(this.rotation * 10);
-    if (this.old.r != r) updateEntity(this.id, { r});
+    if (this.old.r != r) updateEntity(this.id, { r });
     this.old.r = r;
   }
 
@@ -217,9 +217,9 @@ class Squish extends Entity {
     pop();
   }
 
-  damage(x, f = null) {
+  damage(x, f = null, l = false) {
     if (this.dead) return;
-    if (f == player.id && this.player && this != player && !friendlyfire) return;
+    if (f == player?.id && this.player && this != player && !friendlyfire) return;
     this.hp -= x;
     if (this.hp <= 0) {
       if (!this.player) {
@@ -273,11 +273,10 @@ class Squish extends Entity {
         });
         this.remove();
       }
-    } 
+    }
     this.healto = Date.now() + healdelay;
-    updateEntity(this.id, 
-      f ? 
-      { hp: this.hp, damager: f } : 
+    if (!l) updateEntity(this.id, f ?
+      { hp: this.hp, damager: f } :
       { hp: this.hp });
   }
 
@@ -294,13 +293,17 @@ class Squish extends Entity {
   }
 
   update(data) {
+    let d = null;
     Object.entries(data).forEach(x => {
       if (x[0] == "x") return this.pos.x = x[1];
       if (x[0] == "y") return this.pos.y = x[1];
       if (x[0] == "r") return this.rotation = x[1] * .1;
-      if (x[0] == "OWNER" && x[1] == username && this.player) this.remove(); 
+      // console.log(this.id, this.type, x[0], x[1]);
+      if (x[0] == "OWNER" && x[1] == username && this.player) this.remove();
+      if (x[0] == "damager") d = x[1];
       this[x[0]] = x[1];
     });
+    if (d) this.damage(0, d, true);
   }
 }
 classes.squish = Squish;
@@ -416,7 +419,7 @@ class Flame extends Entity {
         this.vel = Math.max(this.vel - .00006 * x, 0);
       }
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
-        let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) / 
+        let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) /
           Math.max(this.pos.copy().sub(e.pos).mag(), size * 4) * dt * .002;
         // console.log(e.class + '.' + e.type, x);
         e.damage(x, this.from);

@@ -16,13 +16,21 @@ let spawn = {
   }
 }
 
-let healspeed = 100;
-let healdelay = 5e3;
-let friendlyfire = false;
-
-let powerammo = false;
-let pierceammo = false;
-let itemmagnet = false;
+let healspeed;
+let healdelay;
+let friendlyfire;
+let powerammo;
+let pierceammo;
+let itemmagnet;
+function resetVars() {
+  healspeed = 100;
+  healdelay = 5e3;
+  friendlyfire = false;
+  powerammo = false;
+  pierceammo = false;
+  itemmagnet = false;
+}
+resetVars()
 
 /** @type {Squish} */
 let player = null;
@@ -41,6 +49,7 @@ async function initgame() {
   entities = {};
   loadstat = "connecting";
   mp = false;
+  resetVars();
   if (game != 'classic') {
     if (!ws || ws?.readyState != ws?.OPEN) {
       let x = await connect(game);
@@ -65,6 +74,7 @@ async function initgame() {
   inventory = [];
   holding = 0;
   points = 0;
+  score = 0;
   ammo = 0;
   camera = player.id;
   xlmt = tex(map).width;
@@ -78,9 +88,9 @@ async function initgame() {
 }
 
 function tickgame() {
-  Object.values(entities).reverse().forEach(x => { 
-    if (!x.removed && x.OWNER == username) x.tick(); 
-    if (x.tickall) x.tickall(); 
+  Object.values(entities).reverse().forEach(x => {
+    if (!x.removed && x.OWNER == username) x.tick();
+    if (x.tickall) x.tickall();
   });
   if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e || GP.a || GP.zr) {
     useitem();
@@ -141,7 +151,7 @@ function drawhud() {
   }
   a = a.join('');
   text(`points: ${points}\nhealth: ${Math.floor(player.hp)}` +
-    `\nammo: ${a}` + (mp ? '\n\n' + Object.entries(users).map(x => 
+    `\nammo: ${a}` + (mp ? '\n\n' + Object.entries(users).map(x =>
       x[0] + (x[1] && !x[1].dead ? "" : " (dead)")
     ).join('\n') : ''), 10, 10);
   pop();
@@ -210,6 +220,7 @@ function playerspawn() {
 }
 
 function playerdeath() {
+  if (player.dead) return;
   player.dead = true;
   updateEntity(player.id, {
     dead: true

@@ -37,13 +37,13 @@ wss.on('connection', ws => {
           message: data.username?.length < 2 ? 'name too short' : 'name too long'
         });
         let nameused = false;
-        wss.clients.forEach(w => { if (w.name == data.username) nameused = true });
+        wss.clients.forEach(w => { if (w.name == data.username && w != ws) nameused = true });
         if (nameused) return send(ws, {
           type: 'alert',
           message: 'name already used'
         });
         if (data.mode != 'fight') return;
-        let r = joinRoom(ws, data.username, 'test', data.mode);
+        let r = joinRoom(ws, data.username, 'test', data.mode, data.vars);
         if (r) return send(ws, {
           type: 'alert',
           message: r
@@ -71,7 +71,7 @@ wss.on('connection', ws => {
           if (!y || !y.res) return; //odd...
           let z = y.res.findIndex(a => a == x);
           if (!z) return; //even odder....
-          y.res.splice(x, 1);
+          y.res.splice(z, 1);
         });
         if (b.delete && b.delete.includes(this.plent)) this.plent = null;
         Object.entries(rooms[ws.room].users).forEach(x => {
@@ -105,9 +105,9 @@ wss.on('connection', ws => {
 });
 server.listen(process.env.PORT || 59015);
 
-function joinRoom(ws, name, room, mode) {
+function joinRoom(ws, name, room, mode, vars) {
   ws.name = name;
-  if (!rooms[room]) createRoom(room, mode);
+  if (!rooms[room]) createRoom(room, mode, vars);
   let r = rooms[room];
   if (r.mode != mode) return 'room already exist on different gamemode';
   ws.mode = mode;
@@ -128,13 +128,13 @@ function joinRoom(ws, name, room, mode) {
   console.log(ws.name, "joined", ws.room);
 }
 
-function createRoom(room, mode) {
+function createRoom(room, mode, vars = {}) {
   rooms[room] = {
     users: {},
     state: {
       create: {},
       update: {},
-      vars: {}
+      vars: vars
     },
     res: {},
     mode
@@ -151,16 +151,16 @@ function leaveRoom(ws) {
     type: 'leave',
     name: ws.name
   });
-  let roomies = Object.keys(rooms[room].users);
+  let roomies = Object.values(rooms[room].users);
   if (roomies.length == 0) {
     delete rooms[room];
     console.log(room, "destroyed");
   } else {
     ws.res.forEach(x => {
       let newowner = roomies[Math.floor(Math.random() * roomies.length)];
-      rooms[room].users[newowner].res.push(x);
+      newowner.res.push(x);
       rooms[room].res[x] = newowner;
-      Object.values(rooms[room].users).forEach(u => u.packet.update.push([x, { OWNER: newowner }]));
+      newowner.packet.update.push([x, { OWNER: newowner.name }]);
     });
   }
   ws.res = [];
