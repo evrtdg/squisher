@@ -18,6 +18,7 @@ let spawn = {
 
 let healspeed = 100;
 let healdelay = 5e3;
+let friendlyfire = false;
 
 let powerammo = false;
 let pierceammo = false;

@@ -122,7 +122,7 @@ class Squish extends Entity {
       }
     }
     if (this.player) return this.checkup();
-    let touching = Object.values(users).find(x => 
+    let touching = (mp ? Object.values(users) : [player]).find(x => 
       x === true ? false : hbox(this.pos, x.pos) && !x.dead);
     if (touching) {
       if (Date.now() - this.cooldown > 100) {
@@ -219,6 +219,7 @@ class Squish extends Entity {
 
   damage(x, f = null) {
     if (this.dead) return;
+    if (f == player.id && this.player && this != player && !friendlyfire) return;
     this.hp -= x;
     if (this.hp <= 0) {
       if (!this.player) {
@@ -270,21 +271,13 @@ class Squish extends Entity {
           y: this.pos.y + Math.random() * size - size * .5,
           amount: h
         });
-        // if (Math.random() < 0.01) createEntity({
-        //   class: 'item',
-        //   id: genid(),
-        //   type: 'ferret',
-        //   x: this.pos.x + Math.random() * size - size * .5,
-        //   y: this.pos.y + Math.random() * size - size * .5,
-        //   amount: 1
-        // }); // HELL NO
         this.remove();
       }
     } 
     this.healto = Date.now() + healdelay;
     updateEntity(this.id, 
-      f == player.id ? 
-      { hp: this.hp, damager: player.id } : 
+      f ? 
+      { hp: this.hp, damager: f } : 
       { hp: this.hp });
   }
 
@@ -305,6 +298,7 @@ class Squish extends Entity {
       if (x[0] == "x") return this.pos.x = x[1];
       if (x[0] == "y") return this.pos.y = x[1];
       if (x[0] == "r") return this.rotation = x[1] * .1;
+      if (x[0] == "OWNER" && x[1] == username && this.player) this.remove(); 
       this[x[0]] = x[1];
     });
   }

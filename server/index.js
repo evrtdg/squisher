@@ -17,6 +17,7 @@ wss.on('connection', ws => {
   ws.name = null;
   ws.room = null;
   ws.plent = null;
+  ws.res = [];
   ws.packet;
   ws.on('message', d => {
     let data;
@@ -56,7 +57,18 @@ wss.on('connection', ws => {
             if (this.plent || b.create[x].name != ws.name) b.splice(x, 1);
             else this.plent = x.id;
           }
+          b.create.forEach(x => {
+            ws.res.push(x.id);
+            rooms[ws.room].res[x.id] = ws;
+          });
         }
+        if (b.delete) b.delete.forEach(x => {
+          let y = rooms[ws.room].res[x];
+          if (!y || !y.res) return; //odd...
+          let z = y.res.findIndex(a => a == x);
+          if (!z) return; //even odder....
+          y.res.splice(x, 1);
+        });
         if (b.delete && b.delete.includes(this.plent)) this.plent = null;
         Object.entries(rooms[ws.room].users).forEach(x => {
           if (x[0] != ws.name) {
@@ -65,20 +77,20 @@ wss.on('connection', ws => {
             if (b.update) a.update.push(...b.update);
             if (b.delete) a.delete.push(...b.delete);
             if (b.event) a.event.push(...b.event.map(x => [ws.name, ...x]));
-            if (b.vars) a.vars = {...a.vars, ...b.vars};
+            if (b.vars) a.vars = { ...a.vars, ...b.vars };
           }
         });
         let s = rooms[ws.room].state;
         if (b.vars) Object.entries(b.vars).forEach(x => s.vars[x[0]] = x[1]);
         if (b.create) b.create.forEach(x => s.create[x.id] = x);
-        if (b.update) b.update.forEach(x => s.update[x[0]] = s.update[x[0]] ? {...s.update[x[0]], ...x[1]} : x[1]);
+        if (b.update) b.update.forEach(x => s.update[x[0]] = s.update[x[0]] ? { ...s.update[x[0]], ...x[1] } : x[1]);
         if (b.delete) b.delete.forEach(x => {
           if (s.create[x]) delete s.create[x];
           if (s.update[x]) delete s.update[x];
         });
         break;
       case "ping":
-        send(ws, {type: "pong", time: Date.now()});
+        send(ws, { type: "pong", time: Date.now() });
         break;
     }
   });
@@ -118,26 +130,36 @@ function createRoom(room, mode) {
     state: {
       create: {},
       update: {},
-      vars: {},
-      res: {}
+      vars: {}
     },
+    res: {},
     mode
   }
   return rooms[room];
 }
 
 function leaveRoom(ws) {
-  console.log(ws.name, "left", ws.room);
-  delete rooms[ws.room].users[ws.name];
-  emit(ws.room, {
+  let room = ws.room;
+  ws.room = null;
+  delete rooms[room].users[ws.name];
+  console.log(ws.name, "left", room);
+  emit(room, {
     type: 'leave',
     name: ws.name
   });
-  if (Object.keys(rooms[ws.room].users).length == 0) {
-    delete rooms[ws.room];
-    console.log(ws.room, "destroyed");
+  let roomies = Object.keys(rooms[room].users);
+  if (roomies.length == 0) {
+    delete rooms[room];
+    console.log(room, "destroyed");
+  } else {
+    ws.res.forEach(x => {
+      let newowner = roomies[Math.floor(Math.random() * roomies.length)];
+      rooms[room].users[newowner].res.push(x);
+      rooms[room].res[x] = newowner;
+      Object.values(rooms[room].users).forEach(u => u.packet.update.push([x, { OWNER: newowner }]));
+    });
   }
-  ws.room = null;
+  ws.res = [];
   ws.plent = null;
 }
 
@@ -158,7 +180,7 @@ setInterval(() => Object.values(rooms).forEach(room => Object.values(room.users)
   if (!packet.event.length) delete packet.event;
   if (!packet.vars.length) delete packet.vars;
   if (Object.keys(packet).length != 0) {
-    send(ws, {type: "packet", ...packet});
+    send(ws, { type: "packet", ...packet });
   }
   clearPacket(ws);
 })), sendinterval);
@@ -169,6 +191,6 @@ function clearPacket(ws) {
     delete: [],
     update: [],
     event: [],
-    vars: {},
+    vars: {}
   };
 }
