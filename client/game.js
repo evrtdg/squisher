@@ -4,6 +4,7 @@ let rotamt = Math.PI * .1;
 let xlmt = 1200;
 let ylmt = 1200;
 let firstshot = true;
+let firstalt = true;
 
 let map = 'map';
 let spawn = {
@@ -14,6 +15,9 @@ let spawn = {
     [1002, -87, 1063, -36]]
   }
 }
+
+let healspeed = 100;
+let healdelay = 5e3;
 
 let powerammo = false;
 let pierceammo = false;
@@ -77,10 +81,14 @@ function tickgame() {
     if (!x.removed && x.OWNER == username) x.tick(); 
     if (x.tickall) x.tickall(); 
   });
-  if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e) {
+  if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e || GP.a || GP.zr) {
     useitem();
     firstshot = false;
   } else firstshot = true;
+  if (keys.mouseright || keys.r || GP.b || GP.zl) {
+    altitem();
+    firstalt = false;
+  } else firstalt = true;
   if (keys.arrowleft && Date.now() - keytimes.arrowleft >= kloop) {
     keytimes.arrowleft = Date.now();
     player.rotation -= rotamt;
@@ -173,10 +181,12 @@ function playerspawn() {
   player.dead = false;
   player.hp = player.maxhp;
   player.holding = null;
+  player.onfire = false;
   updateEntity(player.id, {
     dead: player.dead,
     hp: player.hp,
-    holding: player.holding
+    holding: player.holding,
+    onfire: false
   });
   camera = player.id;
   updateinv();

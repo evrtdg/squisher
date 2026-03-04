@@ -8,7 +8,6 @@ let menu, game;
 let menubtn;
 /** @type {p5.Element} */
 let menuuser;
-let menuIndex = 0;
 let textures = {};
 let sounds = {};
 let loadstat = null;
@@ -24,6 +23,7 @@ function setup() {
   menu = null;
   game = null;
   menubtn = [];
+  textures.map = loadImage('assets/map.svg');
   textures.pistol = loadImage('assets/pistol.png');
   textures.shotgun = loadImage('assets/shotgun.svg');
   textures.shotgun.size = 2;
@@ -41,14 +41,11 @@ function setup() {
   textures.whiteferret = loadImage('assets/whiteferret.jpeg');
   textures.point = loadImage('assets/point.png');
   textures.ammo = loadImage('assets/ammo.png');
-  textures.map = loadImage('assets/map.svg');
   textures.hp = loadImage('assets/hp.png');
   textures.medkit = loadImage('assets/medkit.png');
   textures.missing = loadImage('assets/missing.png');
   sounds.missing = loadSound('assets/sounds/missing.mp3');
   sounds.start = loadSound('assets/sounds/start.mp3');
-  // sounds.tread_carefully = loadSound('assets/sounds/tread_carefully.mp3');
-  // sounds.jets_average = loadSound('assets/sounds/jets_average.mp3');
   font = loadFont('assets/prodsans.ttf');
   switchmenu('menu');
 }
@@ -68,16 +65,26 @@ function play(n, v = .5) {
 
 let songs = ["tread_carefully", "jets_average"];
 let playing = null;
-function music(song = 0) {
-  let s = play(songs[song]);
-  if (menu == "pause") s.pause();
-  playing = s;
-  s.onended(() => {
-    playing = null;
-    setTimeout(() => {
-      if (!playing) music((song + 1) % songs.length);
-    }, 500);
-  });
+let domusic = 0;
+async function music() {
+  let song = 0;
+  domusic = 1;
+  while (domusic) {
+    if (!sounds[songs[song]]) await new Promise(y => {
+      sounds[songs[song]] = loadSound('assets/sounds/' + songs[song] + '.mp3', y);
+    });
+    let s = play(songs[song], 0.3);
+    if (menu == "pause") s.pause();
+    playing = s;
+    await new Promise(y => {
+      s.onended(() => {
+        if (playing._paused) return;
+        playing = null;
+        setTimeout(y, 500);
+      });
+    });
+    song = (song + 1) % songs.length;
+  }
 }
 
 function windowResized() {
@@ -85,7 +92,7 @@ function windowResized() {
 }
 
 function draw() {
-  updateGamepad();
+  updategamepad();
   if (font) textFont(font);
   if (menu == 'menu') {
     background(255);
@@ -131,8 +138,8 @@ function draw() {
 
 function initmenu() {
   menubtn.push(...[
-    createButton('Classic mode').id('classic'),
-    createButton('Fighting mode').id('fight'),
+    createButton('Classic mode (singleplayer)').id('classic'),
+    createButton('Fighting mode (multiplayer)').id('fight'),
   ]);
   createElement('div', 'Squisher').id('rainbow').parent('gms');
   menubtn.forEach(b => {
@@ -165,7 +172,7 @@ async function switchmenu(m, g) {
   menu = m;
   if (menu == 'menu') initmenu();
   if (menu == "pause" && playing) playing.pause();
-  if (menu == "game" && playing) playing.play();
+  if (menu == "game" && playing && domusic) playing.play();
 }
 
 let lk = "";
@@ -173,7 +180,7 @@ function keyPressed() {
   let k = key.toLowerCase();
   keys[k] = true;
   keytimes[k] = Date.now() - kloop;
-  if ((k == 'arrowdown' || k == 'mouseright' || k == 'q') && player && menu == "game") {
+  if ((k == 'arrowdown' || k == 'q') && player && menu == "game") {
     holding = (holding + 1) % inventory.length;
     updateinv();
   }
@@ -184,6 +191,7 @@ function keyPressed() {
     updateinv()
   }
   lk = k;
+  if (player && player.dead && menu == "game") playerspawn();
 }
 
 function keyReleased() {
@@ -202,7 +210,7 @@ function mouseDragged() {
 }
 
 function mousePressed() {
-  if (player && player.dead) playerspawn();
+  if (player && player.dead && menu == "game") playerspawn();
   key = 'mouse' + mouseButton;
   keyPressed();
 }
@@ -212,73 +220,49 @@ function mouseReleased() {
   keyReleased();
 }
 
-function updateGamepad() {
-  const gamepads = navigator.getGamepads();
-  const gp = gamepads[0];
-
+let GP = {};
+let GPold = {};
+function updategamepad() {
+  const gpo = GP;
+  GP = {};
+  const gp = navigator.getGamepads()[0];
   if (!gp) return;
 
-  if (menu == 'menu') {
-    let stickDown = gp.axes[1] > 0.5 || gp.buttons[13].pressed;
-    let stickUp = gp.axes[1] < -0.5 || gp.buttons[12].pressed;
+  GP.b = gp.buttons[0].pressed;
+  GP.a = gp.buttons[1].pressed;
+  GP.y = gp.buttons[2].pressed;
+  GP.x = gp.buttons[3].pressed;
+  GP.l = gp.buttons[4].pressed;
+  GP.r = gp.buttons[5].pressed;
+  GP.zl = gp.buttons[6].pressed;
+  GP.zr = gp.buttons[7].pressed;
+  GP.menu = gp.buttons[8].pressed || gp.buttons[9].pressed;
+  
+  GP.ls = createVector(gp.axes[0], gp.axes[1]);
+  GP.rs = createVector(gp.axes[2], gp.axes[3]);
+  GP.dp = createVector(
+    gp.buttons[15].pressed - gp.buttons[14].pressed,
+    gp.buttons[13].pressed - gp.buttons[12].pressed
+  );
+  if (player && menu == "game" && GP.rs.magSq() > .1) player.rotation = GP.rs.heading();
 
-    if ((stickDown || stickUp) && !keys.gpMenu) {
-      menubtn.forEach(btn => btn.removeClass('selected'));
-      if (stickDown) menuIndex = (menuIndex + 1) % menubtn.length;
-      if (stickUp) menuIndex = (menuIndex - 1 + menubtn.length) % menubtn.length;
+  GPold = gpo;
+  for (const key in GP) {
+    if (key == "rs" || key == "ls" || key == "cd" || !GP[key] || GPold[key]) continue;
 
-      menubtn[menuIndex].addClass('selected');
-      menubtn[menuIndex].elt.focus();
-      play('select', 0.1);
-      keys.gpMenu = true;
-    } else if (!stickDown && !stickUp) {
-      keys.gpMenu = false;
-    }
+    if (key == "menu") switchmenu(menu == 'pause' ? 'game' : 'pause');
+    if (menu != "game") continue;
 
-    if (gp.buttons[0].pressed && !keys.gpConfirm) {
-      menubtn[menuIndex].elt.click();
-      keys.gpConfirm = true;
-    } else if (!gp.buttons[0].pressed) {
-      keys.gpConfirm = false;
-    }
+    let x = inventory.length;
+    if (key == "l" || key == "x") updateinv(holding = (x + holding - 1) % x);
+    if (key == "r" || key == "y") updateinv(holding = ++holding % x);
+
+    if (player && player.dead) playerspawn();
   }
-
-  if (menu == 'game' && player) {
-
-    if (player.dead) {
-      if (gp.buttons[0].pressed && !keys.gpRespawn) {
-        playerspawn();
-        keys.gpRespawn = true;
-      } else if (!gp.buttons[0].pressed) {
-        keys.gpRespawn = false;
-      }
-      return;
-    }
-
-    keys['a'] = gp.axes[0] < -0.3;
-    keys['d'] = gp.axes[0] > 0.3;
-    keys['w'] = gp.axes[1] < -0.3;
-    keys['s'] = gp.axes[1] > 0.3;
-
-
-    let rsX = gp.axes[2];
-    let rsY = gp.axes[3];
-    if (Math.abs(rsX) > 0.2 || Math.abs(rsY) > 0.2) {
-      player.rotation = Math.atan2(rsY, rsX);
-    }
-
-    keys[' '] = gp.buttons[7].pressed;
-
-    if (gp.buttons[4].pressed || gp.buttons[5].pressed) {
-      if (!keys.gpCycle) {
-        holding = (holding + 1) % inventory.length;
-        updateinv();
-        keys.gpCycle = true;
-      }
-    } else {
-      keys.gpCycle = false;
-    }
-  }
+  // if ((GP.l || GP.r) && (keytimes.gpturn || 0) < Date.now() && menu == "game") {
+  //   player.rotation += (GP.r - GP.l) * rotamt;
+  //   keytimes.gpturn = Date.now() + kloop;
+  // }
 }
 
 function drawpause() {

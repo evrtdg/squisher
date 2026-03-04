@@ -118,7 +118,8 @@ function createRoom(room, mode) {
     state: {
       create: {},
       update: {},
-      vars: {}
+      vars: {},
+      res: {}
     },
     mode
   }

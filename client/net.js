@@ -7,6 +7,7 @@ let users = {};
 
 let DEBUG = 0;
 let sendinterval = 75;
+let smoothfactor = .25;
 
 function genid() {
   return Math.floor(Math.random() * (36 ** 8 - 1)).toString(36);
@@ -148,4 +149,6 @@ function sendPacket() {
   clearPacket();
 }
 
-setInterval(() => send({ type: "ping", time: Date.now() }), 30e3);
+setInterval(() => {
+  if (mp) send({ type: "ping", time: Date.now() });
+}, 30e3);

@@ -8,18 +8,24 @@ class Entity {
     this.id = id;
     this.type = type;
     this.pos = createVector(x, y);
+    this.dispos = createVector(x, y);
     entities[id] = this;
     this.old = {};
   }
 
   draw() {
     push();
-    translate(this.pos);
+    translate(this.dispos);
     fill(255, 0, 0);
     stroke(0);
     strokeWeight(1);
     rect(0, 0, size);
     pop();
+  }
+
+  tickall() {
+    if (this.OWNER != username) this.dispos.add(this.pos.copy().sub(this.dispos).mult(smoothfactor));
+    else this.dispos.set(this.pos);
   }
 
   tick() {
@@ -75,10 +81,11 @@ class Squish extends Entity {
     this.firetick = 0;
     this.onfire = 0;
     this.name = data.name;
+    this.healto = 0;
   }
 
   tickall() {
-    this.dispos.add(this.pos.copy().sub(this.dispos).mult(this.OWNER == username ? .5 : .2));
+    this.dispos.add(this.pos.copy().sub(this.dispos).mult(this.OWNER == username ? .5 : smoothfactor));
   }
 
   tick() {
@@ -94,37 +101,57 @@ class Squish extends Entity {
         playerdeath();
         // if (f) camera = f;
       }
+      if (!this.dead && this.healto < Date.now() && this.hp < this.maxhp) {
+        this.healto = Date.now() + healspeed;
+        this.heal(1);
+      }
       if (!this.dead) {
         let m = createVector(
-          ((keys.d || false) - (keys.a || false)) * dt * speed,
-          ((keys.s || false) - (keys.w || false)) * dt * speed,
+          ((keys.d || false) - (keys.a || false)),
+          ((keys.s || false) - (keys.w || false)),
         );
+        if (GP.ls && GP.ls.magSq() > 0.1) m.add(GP.ls.mult(2));
+        if (GP.dp) m.add(GP.dp.mult(2));
+        m.set(
+          Math.min(Math.max(m.x, -1), 1), 
+          Math.min(Math.max(m.y, -1), 1)
+        );
+        m.mult(dt * speed);
         if (bcoll(this.pos.copy().add(m.x, 0))) this.pos.add(m.x, 0);
         if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
       }
     }
     if (this.player) return this.checkup();
-    if (hbox(this.pos, player.pos) && !player.dead) {
+    let touching = Object.values(users).find(x => 
+      x === true ? false : hbox(this.pos, x.pos) && !x.dead);
+    if (touching) {
       if (Date.now() - this.cooldown > 100) {
         this.cooldown = Date.now();
-        player.damage({
+        touching.damage({
           basic: Math.floor(Math.random() * 4) + 2
         }[this.type], this.id);
       }
     } else {
+      // if (!this.v) this.v = createVector(0, 0);
       let x = createVector((Math.random() - .5) * dt * .5, (Math.random() - .5) * dt * .5);
-      if (hbox(this.pos, player.pos, 4 * size) && !player.dead)
-        x.add(player.pos.copy().sub(this.pos).setMag(dt * .1));
-      if (hbox(this.pos, player.pos, 16 * size) && !player.dead)
-        x.add(player.pos.copy().sub(this.pos).setMag(dt * .05));
-      if (pcoll(this.pos.copy().add(x))) this.pos.add(x);
+      (mp ? Object.values(users) : [player]).forEach(p => {
+        if (p === true) return;
+        if (hbox(this.pos, p.pos, 4 * size) && !p.dead)
+          x.add(p.pos.copy().sub(this.pos).setMag(dt * .1));
+        if (hbox(this.pos, p.pos, 16 * size) && !p.dead)
+          x.add(p.pos.copy().sub(this.pos).setMag(dt * .05));
+      });
+      // this.v.add(x);
+      // if (this.v.magSq > 1) this.v.setMag(1);
+      let y = x;//this.v.copy().mult(dt * .5);
+      if (pcoll(this.pos.copy().add(y))) this.pos.add(y);
     }
     this.checkup();
   }
 
   checkupplus() {
-    let r = Math.floor(this.rotation * 5) * .20;
-    if (this.old.r != r) updateEntity(this.id, { rotation: r });
+    let r = Math.floor(this.rotation * 10);
+    if (this.old.r != r) updateEntity(this.id, { r});
     this.old.r = r;
   }
 
@@ -254,7 +281,11 @@ class Squish extends Entity {
         this.remove();
       }
     } 
-    updateEntity(this.id, { hp: this.hp });
+    this.healto = Date.now() + healdelay;
+    updateEntity(this.id, 
+      f == player.id ? 
+      { hp: this.hp, damager: player.id } : 
+      { hp: this.hp });
   }
 
   heal(x) {
@@ -267,6 +298,15 @@ class Squish extends Entity {
 
   getdata() {
     return { holding: this.holding, rotation: this.rotation, hp: this.hp };
+  }
+
+  update(data) {
+    Object.entries(data).forEach(x => {
+      if (x[0] == "x") return this.pos.x = x[1];
+      if (x[0] == "y") return this.pos.y = x[1];
+      if (x[0] == "r") return this.rotation = x[1] * .1;
+      this[x[0]] = x[1];
+    });
   }
 }
 classes.squish = Squish;
@@ -289,7 +329,7 @@ class Bullet extends Entity {
 
   draw() {
     push();
-    translate(this.pos);
+    translate(this.dispos);
     stroke(255, 255, 0);
     strokeWeight(size * .25);
     let v = createVector(size, 0).setHeading(this.rot);
@@ -331,18 +371,29 @@ class Flame extends Entity {
     this.rot = data.rot;
     this.vel = data.vel || 0;
     this.size = data.size || size;
-    this.svel = this.vel * .5;
+    this.dissize = this.size;
+    this.svel = this.vel * .8;
   }
 
   draw() {
     push();
-    translate(this.pos);
+    translate(this.dispos);
     fill(255, 0, 0);
     stroke(255, 128, 0);
     strokeWeight(2);
-    scale(Math.sqrt(this.size));
+    scale(Math.sqrt(this.dissize));
     rect(-4, -4, 8, 8);
     pop();
+  }
+
+  tickall() {
+    if (this.OWNER != username) {
+      this.dispos.add(this.pos.copy().sub(this.dispos).mult(smoothfactor));
+      this.dissize += (this.size - this.dissize) * smoothfactor;
+    } else {
+      this.dispos.set(this.pos);
+      this.dissize = this.size;
+    }
   }
 
   tick() {
@@ -350,7 +401,7 @@ class Flame extends Entity {
     let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
     if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
     else this.vel = 0;
-    this.svel *= .99;
+    this.svel *= .89;
     this.size += this.svel * 3;
     this.size -= 50 / this.size;
     Object.values(entities).forEach(e => {
@@ -358,7 +409,7 @@ class Flame extends Entity {
         hbox(this.pos, e.pos, Math.min(this.size, size * 12) * .5 + e.size * .5)) {
         this.pos.add(e.pos.copy().sub(this.pos).mult(.01));
         e.size -= 1;
-        this.size += .5;
+        this.size += .8;
         return;
       }
       if (!e.hp /*|| e.id == this.from*/) return;
@@ -368,14 +419,14 @@ class Flame extends Entity {
         x = x * .4 + dt * Math.max(this.vel * this.vel, size) * .8;
         // x = Math.sqrt(x);
         e.onfire = Math.min(x, 3e3) + Date.now();
-        this.vel = Math.max(this.vel - .0002 * x, 0);
+        this.vel = Math.max(this.vel - .00006 * x, 0);
       }
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
-        let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) / Math.max(this.pos.copy()
-          .sub(e.pos).magSq(), size * 4) * dt * .2;
+        let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) / 
+          Math.max(this.pos.copy().sub(e.pos).mag(), size * 4) * dt * .002;
         // console.log(e.class + '.' + e.type, x);
         e.damage(x, this.from);
-        this.svel -= x * .05;
+        this.svel *= 1 - x * .01;
       }
     });
     if (this.size <= 1) this.remove();
