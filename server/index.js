@@ -1,9 +1,11 @@
 const DEBUG = 0;
 require('dotenv').config({ quiet: true });
 const static = new (require('node-static').Server)('./client');
-const server = require('http').createServer((req, res) => {
+const server = require('http').createServer(async (req, res) => {
   if (process.env.DEV)
     static.serve(req, res);
+  else if (req.url == "/" + process.env.UPDATE_TOKEN)
+    require("child_process").spawn('bash', '-c', 'git pull; pm2 restart squisher');
 });
 const wss = new (require('ws').Server)({ server });
 

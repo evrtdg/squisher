@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_URL: ${{ secrets.API_URL }} 
-
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -39,3 +38,12 @@ jobs:
       - name: deploy
         id: deployment
         uses: actions/deploy-pages@v4
+
+  update:
+    runs-on: ubuntu-latest
+    env:
+      UPDATE_WEBHOOK: ${{ secrets.UPDATE_WEBHOOK }} 
+    steps:
+      - name: update server
+        run: |
+          curl "$UPDATE_WEBHOOK"
