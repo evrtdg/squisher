@@ -125,7 +125,6 @@ function draw() {
       if (mp && Object.keys(users).length > 1) tickgame();
       dt = dt % pdps;
     }
-    mptick();
     drawpause();
   }
   if (loadstat) {
@@ -151,6 +150,7 @@ function draw() {
       GPcursorElement.style.borderRadius = "100px";
     }
   }
+  mptick();
 }
 
 function initmenu() {
@@ -332,7 +332,7 @@ let starttouch = {};
 let touch = {};
 let ti = {};
 function updatetouch() {
-  if (touches) ti.yeah = true;
+  if (touches.length) ti.yeah = true;
   for (let t of touches) {
     if (!touch[t.id]) {
       starttouch[t.id] = createVector(t.x, t.y);

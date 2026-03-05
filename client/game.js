@@ -205,6 +205,8 @@ function drawpause() {
   stroke(0, 0, 0);
   strokeWeight(2);
   rect(50, 50, 100, 100);
+  text(Object.entries(users).map(x => x[0] + (x[1] && 
+    !x[1].dead ? "" : " (dead)")).join('\n'), 10, 10);
   pop();
 }
 

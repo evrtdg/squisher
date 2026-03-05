@@ -1,6 +1,7 @@
 /** @type {WebSocket} */
 let ws = null;
 let cdcb = null;
+let pinged = false;
 let packet;
 let lastsent;
 let users = {};
@@ -22,7 +23,7 @@ function connect(mode) {
     ws.onopen = () => {
       if (mode) joinGame(mode);
       ws.onclose = () => {
-        if (mp) {
+        if (mp && menu != "menu") {
           switchmenu("menu");
           loadstat = "Disconnected from server.";
         } //else setTimeout(connect, 10e3);
@@ -44,6 +45,8 @@ function leaveGame() {
 }
 
 function send(data) {
+  if (!ws || ws.readyState != ws.OPEN) 
+    return console.error("cant send message cause connection dead");
   ws.send(JSON.stringify(data));
   if (DEBUG) console.log(">", data);
 }
@@ -77,6 +80,13 @@ function handlemsg(data) {
     case 'leave':
       delete users[data.name];
       break;
+    case 'kick':
+      switchmenu("menu");
+      loadstat = data.reason;
+      break;
+    case 'ping':
+      pinged = true;
+      break;
   }
 }
 
@@ -88,6 +98,10 @@ function mpinit() {
 }
 
 function mptick() {
+  if (pinged) {
+    send({ type: "pong", time: Date.now() });
+    pinged = false;
+  }
   if (!mp) return;
   if (Date.now() > lastsent + sendinterval)
     sendPacket();
@@ -158,7 +172,3 @@ function sendPacket() {
   }
   clearPacket();
 }
-
-setInterval(() => {
-  if (ws && ws.readyState == ws.OPEN) send({ type: "ping", time: Date.now() });
-}, 30e3);

@@ -21,6 +21,7 @@ wss.on('connection', ws => {
   ws.name = null;
   ws.room = null;
   ws.plent = null;
+  ws.pingt = null;
   ws.res = [];
   ws.packet;
   ws.on('message', d => {
@@ -93,8 +94,8 @@ wss.on('connection', ws => {
           if (s.update[x]) delete s.update[x];
         });
         break;
-      case "ping":
-        send(ws, { type: "pong", time: Date.now() });
+      case "pong":
+        ws.pingt = null;
         break;
     }
   });
@@ -177,6 +178,12 @@ function send(ws, data) {
 }
 
 setInterval(() => Object.values(rooms).forEach(room => Object.values(room.users).forEach(ws => {
+  if (ws.pingt && ws.pingt < Date.now() - 10e3) {
+    console.log(ws.name, "was kicked due to inactivity");
+    leaveRoom(ws);
+    send(ws, {type: "kick", reason: "Kicked due to inactivity"});
+    return;
+  }
   let packet = ws.packet;
   if (!packet.create.length) delete packet.create;
   if (!packet.update.length) delete packet.update;
@@ -198,3 +205,8 @@ function clearPacket(ws) {
     vars: {}
   };
 }
+
+setInterval(() => Object.values(rooms).forEach(room => Object.values(room.users).forEach(ws => {
+  ws.pingt = Date.now();
+  send(ws, { type: "ping", time: Date.now() });
+})), 15e3);
