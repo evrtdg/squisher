@@ -154,6 +154,7 @@ function draw() {
 }
 
 function initmenu() {
+  mp = false;
   document.querySelector('#gms').classList.remove("hidden");
   document.querySelector('#classicbtn').onclick = () => switchmenu('game', 'classic');
   document.querySelector('#fightbtn').onclick = () => switchmenu('game', 'fight');
@@ -349,6 +350,10 @@ function updatetouch() {
         holding = ++holding % inventory.length;
         updateinv();
       }
+      if (menu == "game" && hbox(createVector(25, 25), starttouch[t.id], 30))
+        switchmenu('pause');
+      if (menu == 'pause' && hbox(createVector(innerWidth - 10, innerHeight - 10),
+        starttouch[t.id], 15)) cheats();
     }
     touch[t.id] = createVector(t.x, t.y);
     if (ti.s) {

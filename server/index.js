@@ -59,8 +59,10 @@ wss.on('connection', ws => {
         if (b.create) {
           let x = b.create.findIndex(x => x.class == "squish" && x.type == "player");
           if (x >= 0) {
-            if (this.plent || b.create[x].name != ws.name) b.splice(x, 1);
-            else this.plent = x.id;
+            if (this.plent || b.create[x].name != ws.name) {
+              b.splice(x, 1);
+              console.log(ws.name, "por que")
+            } else this.plent = x.id;
           }
           b.create.forEach(x => {
             ws.res.push(x.id);

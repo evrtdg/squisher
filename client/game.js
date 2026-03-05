@@ -195,16 +195,20 @@ function drawhud() {
     rect(innerWidth - 200, innerHeight - 100, 55);
     fill(255, 128);
     rect(innerWidth - 100, innerHeight - 300, 35);
+    rect(25, 25, 30);
     pop();
   }
 }
 
 function drawpause() {
   push();
-  fill(255, 0, 0);
-  stroke(0, 0, 0);
+  stroke(0);
   strokeWeight(2);
+  fill(255, 0, 0);
   rect(50, 50, 100, 100);
+  fill(255);
+  textSize(16);
+  textAlign(LEFT, TOP);
   text(Object.entries(users).map(x => x[0] + (x[1] && 
     !x[1].dead ? "" : " (dead)")).join('\n'), 10, 10);
   pop();

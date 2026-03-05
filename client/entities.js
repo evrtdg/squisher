@@ -420,6 +420,7 @@ class Flame extends Entity {
         let x = Math.max(0, (e.onfire || 0) - Date.now());
         x = x * .4 + dt * Math.max(this.vel * this.vel * 4, size) * .8;
         e.onfire = Math.min(x, 1e3) * 3 + Date.now();
+        if (mp) updateEntity(e.id, { onfire: e.onfire });
         this.vel = Math.max(this.vel - .00006 * x, 0);
       }
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 8))) {
@@ -429,7 +430,7 @@ class Flame extends Entity {
         this.svel *= 1 - x * .025;
       }
     });
-    if (this.size <= 1) this.remove();
+    if (this.size <= 1 || this.size > 600) this.remove();
     this.checkup();
   }
 
