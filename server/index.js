@@ -5,7 +5,7 @@ const server = require('http').createServer(async (req, res) => {
   if (process.env.DEV)
     static.serve(req, res);
   else if (req.url == "/" + process.env.UPDATE_TOKEN) {
-    require("child_process").exec('git pull | grep -q "server" && pm2 restart x');
+    require("child_process").exec('git pull | grep "server" && pm2 restart x');
     res.writeHead(200).end();
   }
 });
