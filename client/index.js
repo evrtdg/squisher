@@ -327,7 +327,6 @@ function updategamepad() {
 
 window.oncontextmenu = e => e.preventDefault();
 
-
 if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) alert("Notice: Safari touch controls do not work");
 let starttouch = {};
 let touch = {};
