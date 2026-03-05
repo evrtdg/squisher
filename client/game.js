@@ -120,7 +120,9 @@ function drawgame(ingame) {
   cam = cam.copy().mult(-1).add(createVector(windowWidth, windowHeight).mult(.5));
   translate(cam);
   drawmap(ingame);
-  Object.values(entities).filter(x => x.onscreen(cam)).reverse().forEach(x => x.draw(ingame));
+  let ents = Object.values(entities).filter(x => x.onscreen(cam)).reverse();
+  ents.filter(x => x.class != "squish").forEach(x => x.draw(ingame));
+  ents.filter(x => x.class == "squish").forEach(x => x.draw(ingame));
   if (game == 'classic') classicdraw(ingame);
   if (game == 'fight') fightdraw(ingame);
   pop();
@@ -250,17 +252,26 @@ function playerdeath() {
 
 function cheats(x) {
   // give('mapper');
-  if (x) give('ferret', 50);
-  give('machinegun');
+  // give('machinegun');
+  // give('shotgun');
   give('goldenmachine');
-  give('shotgun');
   give('goldenshot');
   give('flamethrower');
-  give('bomb', 50);
+  give('bomb', 100);
+  give('medkit', 100);
   powerammo = true;
   pierceammo = true;
   itemmagnet = true;
   ammo = 1000;
   player.hp = 1000;
   player.onfire = 0;
+}
+
+function drawpause() {
+  push();
+  fill(255, 0, 0);
+  stroke(0, 0, 0);
+  strokeWeight(2);
+  rect(50, 50, 100, 100);
+  pop();
 }

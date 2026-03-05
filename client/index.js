@@ -66,16 +66,20 @@ let playing = null;
 let domusic = 0;
 async function music() {
   let song = 0;
+  let boog = 0;
   domusic = 1;
+  if (playing) playing.pause();
   while (domusic) {
     if (!sounds[songs[song]]) await new Promise(y => {
       sounds[songs[song]] = loadSound('assets/sounds/' + songs[song] + '.mp3', y);
     });
     let s = play(songs[song], 0.3);
-    if (menu == "pause") s.pause();
+    if (menu == "pause" && boog) s.pause();
+    boog = 1;
     playing = s;
-    await new Promise(y => {
+    if (domusic) await new Promise(y => {
       s.onended(() => {
+        if (!domusic) return y();
         if (playing._paused) return;
         playing = null;
         setTimeout(y, 500);
@@ -91,6 +95,7 @@ function windowResized() {
 
 function draw() {
   updategamepad();
+  updatetouch();
   if (font) textFont(font);
   if (menu == 'menu') {
     background(255);
@@ -109,7 +114,6 @@ function draw() {
     if (dt > itps) {
       if (dt > 100) dt = 100;
       tickgame();
-      mptick();
       dt = dt % itps;
     }
     drawgame(true);
@@ -118,8 +122,10 @@ function draw() {
     if (dt > pdps) {
       if (dt > 100) dt = 100;
       drawgame();
+      if (mp) tickgame();
       dt = dt % pdps;
     }
+    mptick();
     drawpause();
   }
   if (loadstat) {
@@ -131,6 +137,19 @@ function draw() {
     textAlign(RIGHT, TOP);
     text(loadstat, innerWidth - 10, 10);
     pop();
+  }
+  if (!GPcursorElement) GPcursorElement = document.querySelector("#gpcursor");
+  if (GPcursor) {
+    GPcursorElement.style.left = GPcursorPos.x + "px";
+    GPcursorElement.style.top = GPcursorPos.y + "px";
+  }
+  if (GPcursor != GPcursorEltShow) {
+    GPcursorElement.style.display = GPcursor ? "inline" : "none";
+    GPcursorEltShow = GPcursor;
+    if (GPcursor == false) {
+      document.querySelector(".gphover")?.classList.remove("gphover");
+      GPcursorElement.style.borderRadius = "100px";
+    }
   }
 }
 
@@ -157,7 +176,28 @@ async function switchmenu(m, g) {
   menu = m;
   if (menu == 'menu') initmenu();
   if (menu == "pause" && playing) playing.pause();
-  if (menu == "game" && playing && domusic) playing.play();
+  document.querySelector("#pause").classList.add("hidden");
+  if (menu == "pause") {
+    document.querySelector("#returnbtn").onclick = () => switchmenu("game");
+    document.querySelector("#leavebtn").onclick = () => leaveGame();
+    document.querySelector("#musicbtn").onclick = () => {
+      if (domusic) {
+        domusic = 0;
+        if (playing) playing.pause();
+      } else music();
+    };
+    document.querySelector("#pause").classList.remove("hidden");
+  }
+  if (menu == "game") {
+    if (playing && domusic) playing.play();
+    if (GP.yeah) {
+      GPcursor = false;
+      GPcursorPos = createVector(innerWidth / 2, innerHeight / 2);
+    }
+  } else if (GP.yeah) {
+    GPcursor = true;
+    GPcursorPos = createVector(innerWidth / 2, innerHeight / 2);
+  }
 }
 
 let lk = "";
@@ -185,16 +225,19 @@ function keyReleased() {
 }
 
 function mouseMoved() {
+  document.body.classList.remove("nocursor");
   let x = createVector(mouseX, mouseY).sub(windowWidth * .5, windowHeight * .5).heading();
-  if (player && menu == "game") player.rotation = x;
+  if (player && menu == "game" && !touches.length) player.rotation = x;
+  GPcursor = false;
+  GPcursorPos = createVector(mouseX, mouseY);
 }
 
 function mouseDragged() {
-  let x = createVector(mouseX, mouseY).sub(windowWidth * .5, windowHeight * .5).heading();
-  if (player && menu == "game") player.rotation = x;
+  mouseMoved();
 }
 
 function mousePressed() {
+  document.body.classList.remove("nocursor");
   if (player && player.dead && menu == "game") playerspawn();
   key = 'mouse' + mouseButton;
   keyPressed();
@@ -207,11 +250,16 @@ function mouseReleased() {
 
 let GP = {};
 let GPold = {};
+let GPcursor = false;
+let GPcursorEltShow = false;
+let GPcursorPos;
+let GPcursorElement = null;
 function updategamepad() {
+  if (!GPcursorPos) GPcursorPos = createVector(innerWidth / 2, innerHeight / 2);
   const gpo = GP;
-  GP = {};
+  GP = { yeah: true };
   const gp = navigator.getGamepads()[0];
-  if (!gp) return;
+  if (!gp) return GP.yeah = false;
 
   GP.b = gp.buttons[0].pressed;
   GP.a = gp.buttons[1].pressed;
@@ -224,7 +272,7 @@ function updategamepad() {
   GP.menu = gp.buttons[8].pressed || gp.buttons[9].pressed;
   GP.ma = gp.buttons[16].pressed;
   GP.mb = gp.buttons[17].pressed || gp.buttons[10].pressed;
-  
+
   GP.ls = createVector(gp.axes[0], gp.axes[1]);
   GP.rs = createVector(gp.axes[2], gp.axes[3]);
   GP.dp = createVector(
@@ -237,8 +285,12 @@ function updategamepad() {
   for (const key in GP) {
     if (key == "rs" || key == "ls" || key == "cd" || !GP[key] || GPold[key]) continue;
 
-    if (key == "menu" && (menu == "pause" || menu == "game")) 
+    if (key == "menu" && (menu == "pause" || menu == "game"))
       switchmenu(menu == 'pause' ? 'game' : 'pause');
+    if ((key == "a" || key == "b" || key == "zr") && GPcursor) {
+      let x = document.querySelector(".gphover");
+      if (x) x.click();
+    }
     if (menu != "game") continue;
 
     let x = inventory.length;
@@ -253,15 +305,43 @@ function updategamepad() {
   //   player.rotation += (GP.r - GP.l) * rotamt;
   //   keytimes.gpturn = Date.now() + kloop;
   // }
-}
-
-function drawpause() {
-  push();
-  fill(255, 0, 0);
-  stroke(0, 0, 0);
-  strokeWeight(2);
-  rect(50, 50, 100, 100);
-  pop();
+  if (menu != "game" && (GP.ls.magSq() > 0.1 ||
+    GP.dp.magSq() > 0.1 || GP.rs.magSq() > 0.1)) {
+    GPcursor = true;
+    GPcursorPos.add(GP.ls.copy().add(GP.rs).add(GP.dp).mult(4));
+    if (GPcursorPos.x > innerWidth) GPcursorPos.x -= innerWidth;
+    if (GPcursorPos.x < 0) GPcursorPos.x += innerWidth;
+    if (GPcursorPos.y > innerHeight) GPcursorPos.y -= innerHeight;
+    if (GPcursorPos.y < 0) GPcursorPos.y += innerHeight;
+    let e = document.elementsFromPoint(GPcursorPos.x, GPcursorPos.y)
+      .filter(x => x.id != "gpcursor")[0];
+    if (e && !e.classList.contains("gphover")) {
+      document.querySelector(".gphover")?.classList.remove("gphover");
+      if (e.tagName == "BUTTON") e.classList.add("gphover");
+      GPcursorElement.style.borderRadius = e.tagName == "BUTTON" ? "4px" : "100px";
+    }
+    document.body.classList.add("nocursor");
+  }
 }
 
 window.oncontextmenu = e => e.preventDefault();
+
+
+if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) alert("safari touch controls dont work");
+let starttouch = {};
+let touch = {};
+function updatetouch() {
+  for (t of touches) {
+    if (!touch[t.id]) {
+      starttouch[t.id] = touch[t.id] = {
+        x: t.x, y: t.y,
+        type: t.x < innerWidth / 2
+      };
+    }
+  }
+  for (id in touch) {
+    if (!touches.find(t => t.id == id)) {
+      delete touch[id];
+    }
+  }
+}

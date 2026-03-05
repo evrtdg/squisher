@@ -345,6 +345,7 @@ class Bullet extends Entity {
         e.damage(this.damage[0] + Math.floor(Math.random() * ((this.damage[1] || 0) + 1)), this.from);
         this.remove();
       }
+      if (e.class == "bomb") e.explode;
     });
     this.checkup();
   }
@@ -398,12 +399,12 @@ class Flame extends Entity {
     let v = createVector(this.vel * dt * .5, 0).setHeading(this.rot);
     if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
     else this.vel = 0;
-    this.svel *= .95;
+    this.svel *= .99 - this.size * 0.0002;
     this.size += this.svel * 3;
     this.size -= 50 / this.size;
     Object.values(entities).forEach(e => {
       if (e.class == 'flame' && e != this && this.size > e.size && hbox(this.pos,
-        e.pos, Math.min(this.size, size * 12) * .5 + e.size * .5)) {
+        e.pos, Math.min(this.size, size * 8) * .5 + e.size * .5)) {
         if (this.size < 300) this.pos.add(e.pos.copy().sub(this.pos).mult(.01));
         if (this.size > 400) this.pos.sub(e.pos.copy().sub(this.pos)
           .div(e.pos.copy().sub(this.pos).magSq()).mult(30));
@@ -413,21 +414,18 @@ class Flame extends Entity {
         }
         return;
       }
-      if (!e.hp /*|| e.id == this.from*/) return;
+      if (!e.hp) return;
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 4)) && e.class == 'squish') {
         let x = Math.max(0, (e.onfire || 0) - Date.now());
-        // x = x * x;
         x = x * .4 + dt * Math.max(this.vel * this.vel * 4, size) * .8;
-        // x = Math.sqrt(x);
         e.onfire = Math.min(x, 1e3) * 3 + Date.now();
         this.vel = Math.max(this.vel - .00006 * x, 0);
       }
-      if (hbox(this.pos, e.pos, Math.min(this.size, size * 12))) {
-        let x = Math.random() * Math.max(Math.min(this.size, size * 12), size * 2) /
+      if (hbox(this.pos, e.pos, Math.min(this.size, size * 8))) {
+        let x = Math.random() * Math.max(Math.min(this.size, size * 8), size * 2) /
           Math.max(this.pos.copy().sub(e.pos).mag(), size * 4) * dt * .002;
-        // console.log(e.class + '.' + e.type, x);
         e.damage(x, this.from);
-        this.svel *= 1 - x * .1;
+        this.svel *= 1 - x * .025;
       }
     });
     if (this.size <= 1) this.remove();
@@ -464,6 +462,12 @@ class Bomb extends Entity {
     if (pcoll(this.pos.copy().add(v))) this.pos.add(v);
     else this.vel = 0;
     if (Date.now() - this.countdown > 3e3) this.explode(this);
+    Object.values(entities).forEach(e => {
+      if (hbox(this.pos, e.pos, size * 1)) {
+        if (e.class == "squish" &&
+          e.id != this.from) this.explode(this);
+      }
+    });
     this.checkup();
   }
 
@@ -474,12 +478,6 @@ class Bomb extends Entity {
     let s = x * .01 + size * .5;
     image(tex((x % 1e3 > 500 ? 'white' : '') + 'bomb'),
       (s + size) * -.5, (s + size) * -.5, size + s, size + s);
-    Object.values(entities).forEach(e => {
-      if (hbox(this.pos, e.pos, size * 1)) {
-        if (e.class == "squish" &&
-          e.id != this.from) this.explode(this);
-      }
-    });
     pop();
   }
 

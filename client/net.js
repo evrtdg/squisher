@@ -39,7 +39,7 @@ function joinGame(mode) {
 }
 
 function leaveGame() {
-  send({ type: 'leave' });
+  if (mp) send({ type: 'leave' });
   switchmenu("menu");
 }
 

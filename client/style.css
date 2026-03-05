@@ -65,3 +65,23 @@ button {
 .hidden {
   display: none;
 }
+
+#gpcursor {
+  position: absolute;
+  z-index: 1000;
+  width: 0;
+  height: 0;
+  padding: 4px;
+  border: 3px solid black;
+  background: white;
+  border-radius: 100px;
+  transform: rotate(45deg);
+}
+
+.gphover {
+  background: #ddd;
+}
+
+.nocursor {
+  cursor: none;
+}

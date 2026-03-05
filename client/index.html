@@ -19,9 +19,11 @@
   <meta property="og:description" content="Squisher is a fun io-like game">
   <meta property="og:image" content="/assets/favicon.png">
   <meta property="og:image:type" content="image/png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 </head>
 
 <body>
+  <span id="gpcursor" style="display:none"></span>
   <main></main>
   <div id="gms" class="center hidden">
     <div id="rainbow">Squisher</div>
@@ -29,6 +31,14 @@
     <button id="fightbtn">Fighting mode (multiplayer)</button><br>
     <br>
     <input placeholder="Username" id="username"></input>
+  </div>
+  <div id="klep" class="center hidden">
+    <div id="topbar"><button></button></div>
+  </div>
+  <div id="pause" class="center hidden">
+    <button id="returnbtn">return</button><br>
+    <button id="leavebtn">leave</button><br>
+    <button id="musicbtn">music</button>
   </div>
 </body>
 
