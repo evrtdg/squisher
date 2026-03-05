@@ -20,23 +20,26 @@ function connect(mode) {
   ws = new WebSocket(API_URL);
   ws.onmessage = x => handlemsg(JSON.parse(x.data));
   return new Promise(y => {
+    cdcb = y;
+    ws.onclose = () => y("Server is offline. You can play classic mode instead.");
+    setTimeout(y, 10e3, "Server is offline. You can play classic mode instead.");
     ws.onopen = () => {
-      if (mode) joinGame(mode);
       ws.onclose = () => {
         if (mp && menu != "menu") {
           switchmenu("menu");
           loadstat = "Disconnected from server.";
         } //else setTimeout(connect, 10e3);
       }
+      if (mode) joinGame(mode);
     }
-    ws.onclose = () => y("Server is offline. You can play classic mode instead.");
-    setTimeout(y, 10e3, "Server is offline. You can play classic mode instead.");
-    cdcb = y;
   });
 }
 
 function joinGame(mode) {
-  send({ type: 'join', username, mode });
+  return new Promise(y => {
+    send({ type: 'join', username, mode });
+    if (!cdcb) cdcb = y;
+  });
 }
 
 function leaveGame() {
@@ -150,6 +153,7 @@ function deleteEntity(id, local = false) {
 function updateEntity(id, data, local = false) {
   let e = entities[id];
   if (!e) return false;
+  if (data.OWNER) console.log("reres", e.id, e.class, e.type, e.OWNER, data.OWNER);
   if (DEBUG) console.log('update', e.type, e.class, e.OWNER, e.id, data);
   if (local) e.update(data);
   if (!local && mp) {

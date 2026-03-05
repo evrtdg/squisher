@@ -210,13 +210,13 @@ function keyPressed() {
     holding = (holding + 1) % inventory.length;
     updateinv();
   }
-  if (k == '~' && player && menu == "game") cheats(lk == "z");
+  if (k == '~' && lk == "`" && player && menu == "game") cheats();
   if (k == 'escape' && player) switchmenu(menu == 'pause' ? 'game' : 'pause');
   if (parseInt(k) <= inventory?.length) {
     holding = parseInt(k) - 1;
     updateinv()
   }
-  lk = k;
+  lk = k == "shift" ? lk : k;
   if (player && player.dead && menu == "game") playerspawn();
 }
 
@@ -327,7 +327,8 @@ function updategamepad() {
 
 window.oncontextmenu = e => e.preventDefault();
 
-if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) alert("Notice: Safari touch controls do not work");
+// if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) alert("Notice: Safari touch controls do not work");
+// ^ google told me this but apparently its total bullshit
 let starttouch = {};
 let touch = {};
 let ti = {};
@@ -335,6 +336,7 @@ function updatetouch() {
   if (touches.length) ti.yeah = true;
   for (let t of touches) {
     if (!touch[t.id]) {
+      if (player?.dead && menu == "game") playerspawn();
       starttouch[t.id] = createVector(t.x, t.y);
       if (t.x < innerWidth / 2 && !ti.s) {
         ti.si = t.id;
@@ -351,8 +353,11 @@ function updatetouch() {
       }
       if (menu == "game" && hbox(createVector(25, 25), starttouch[t.id], 30))
         switchmenu('pause');
-      if (menu == 'pause' && hbox(createVector(innerWidth - 10, innerHeight - 10),
-        starttouch[t.id], 15)) cheats();
+      if (ti.goog == true && menu == 'pause' && hbox(createVector(
+        20, 20), starttouch[t.id], 35)) cheats();
+      if (menu == 'pause' && hbox(createVector(innerWidth - 20, innerHeight - 20),
+        starttouch[t.id], 35)) ti.goog = true;
+      else ti.goog = false;
     }
     touch[t.id] = createVector(t.x, t.y);
     if (ti.s) {
@@ -369,4 +374,20 @@ function updatetouch() {
       if (id == ti.b - 1) ti.b = null;
     }
   }
+}
+
+function getmovementinput() {
+  let m = createVector(
+    ((keys.d || false) - (keys.a || false)),
+    ((keys.s || false) - (keys.w || false)),
+  );
+  if (GP.ls && GP.ls.magSq() > 0.1) m.add(GP.ls.mult(2));
+  if (ti.s && ti.s.magSq() > 65 * 65) m.add(ti.s.copy().mult(0.025));
+  if (GP.dp) m.add(GP.dp.mult(2));
+  m.set(
+    Math.min(Math.max(m.x, -1), 1),
+    Math.min(Math.max(m.y, -1), 1)
+  );
+  m.mult(dt);
+  return m;
 }

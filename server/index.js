@@ -59,10 +59,8 @@ wss.on('connection', ws => {
         if (b.create) {
           let x = b.create.findIndex(x => x.class == "squish" && x.type == "player");
           if (x >= 0) {
-            if (this.plent || b.create[x].name != ws.name) {
-              b.splice(x, 1);
-              console.log(ws.name, "por que")
-            } else this.plent = x.id;
+            if (this.plent || b.create[x].name != ws.name) b.splice(x, 1);
+            else this.plent = x.id;
           }
           b.create.forEach(x => {
             ws.res.push(x.id);
@@ -75,6 +73,7 @@ wss.on('connection', ws => {
           let z = y.res.findIndex(a => a == x);
           if (!z) return; //even odder....
           y.res.splice(z, 1);
+          delete rooms[ws.room].res[x];
         });
         if (b.delete && b.delete.includes(this.plent)) this.plent = null;
         Object.entries(rooms[ws.room].users).forEach(x => {
@@ -158,16 +157,19 @@ function leaveRoom(ws) {
   if (roomies.length == 0) {
     delete rooms[room];
     console.log(room, "destroyed");
-  } else {
-    ws.res.forEach(x => {
-      let newowner = roomies[Math.floor(Math.random() * roomies.length)];
-      newowner.res.push(x);
-      rooms[room].res[x] = newowner;
-      newowner.packet.update.push([x, { OWNER: newowner.name }]);
-    });
-  }
+  } else ws.res.forEach(x => reres(x, room));
   ws.res = [];
   ws.plent = null;
+}
+
+function reres(x, room, old = null) {
+  let roomies = Object.values(rooms[room].users);
+  if (old) roomies.splice(roomies.indexOf(old), 1);
+  let newowner = roomies[Math.floor(Math.random() * roomies.length)];
+  newowner.res.push(x);
+  rooms[room].res[x] = newowner;
+  newowner.packet.update.push([x, { OWNER: newowner.name }]);
+  if (old) old.packet.update.push([x, { OWNER: newowner.name }]);
 }
 
 function emit(room, data) {
@@ -183,9 +185,13 @@ setInterval(() => Object.values(rooms).forEach(room => Object.values(room.users)
   if (ws.pingt && ws.pingt < Date.now() - 10e3) {
     console.log(ws.name, "was kicked due to inactivity");
     leaveRoom(ws);
-    send(ws, {type: "kick", reason: "Kicked due to inactivity"});
+    send(ws, { type: "kick", reason: "Kicked due to inactivity" });
     return;
   }
+  // if (ws.res.length > 50 && Object.keys(room.res).length / Object.keys(room.users).length < 50) {
+  //   let r = ws.res[Math.floor(Math.random() * ws.res.length)];
+  //   if (ws.plent != r) reres(r, ws.room, ws);
+  // };
   let packet = ws.packet;
   if (!packet.create.length) delete packet.create;
   if (!packet.update.length) delete packet.update;

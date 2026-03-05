@@ -46,6 +46,8 @@ let score = 0;
 
 async function initgame() {
   console.log("init", game);
+  noLoop();loop();
+  if (player) player.remove();
   entities = {};
   loadstat = "connecting";
   mp = false;
@@ -53,13 +55,14 @@ async function initgame() {
   if (game != 'classic') {
     if (!ws || ws?.readyState != ws?.OPEN) {
       let x = await connect(game);
+      cdcb = null;
       if (x) {
         switchmenu('menu');
         loadstat = x;
         return false;
       }
     } else {
-      joinGame(game);
+      await joinGame(game);
     }
   }
   loadstat = "initializing";
@@ -116,8 +119,13 @@ function tickgame() {
 function drawgame(ingame) {
   background(255);
   push();
-  let cam = (camera.constructor.name == 'String' ?
-    entities[camera]?.dispos || entities[camera]?.pos : camera) || createVector();
+  let cam = (camera?.constructor.name == 'String' ?
+    entities[camera]?.dispos || entities[camera]?.pos : camera);
+  if (!cam) {
+    cam = camera = createVector(0, 0);
+    camera.freecam = true;
+  }
+  if (camera.freecam) camera.add(getmovementinput().mult(8));speed
   cam = cam.copy().mult(-1).add(createVector(windowWidth, windowHeight).mult(.5));
   translate(cam);
   drawmap(ingame);
@@ -177,7 +185,7 @@ function drawhud() {
     push();
     stroke(0);
     strokeWeight(2);
-    if (ti.s) {
+    if (ti.s && !player?.dead) {
       let s = starttouch[ti.si];
       let j = starttouch[ti.si].copy().add(ti.s);
       fill(255, 128);
@@ -189,13 +197,13 @@ function drawhud() {
       circle(j.x, j.y, 50);
     }
     rectMode(CENTER);
-    fill(ti.a ? 200 : 255, 128);
-    rect(innerWidth - 100, innerHeight - 200, 75);
-    fill(ti.b ? 200 : 255, 128);
-    rect(innerWidth - 200, innerHeight - 100, 55);
     fill(255, 128);
-    rect(innerWidth - 100, innerHeight - 300, 35);
+    if (inventory.length > 1) rect(innerWidth - 100, innerHeight - 300, 35);
     rect(25, 25, 30);
+    fill(ti.a ? 200 : 255, 128);
+    if (!player?.dead) rect(innerWidth - 100, innerHeight - 200, 75);
+    fill(ti.b ? 200 : 255, 128);
+    if (!player?.dead) rect(innerWidth - 200, innerHeight - 100, 55);
     pop();
   }
 }
@@ -290,7 +298,7 @@ function playerdeath() {
   updateinv();
 }
 
-function cheats(x) {
+function cheats() {
   // give('mapper');
   // give('machinegun');
   // give('shotgun');

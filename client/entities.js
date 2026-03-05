@@ -106,18 +106,8 @@ class Squish extends Entity {
         this.heal(1);
       }
       if (!this.dead && menu != "pause") {
-        let m = createVector(
-          ((keys.d || false) - (keys.a || false)),
-          ((keys.s || false) - (keys.w || false)),
-        );
-        if (GP.ls && GP.ls.magSq() > 0.1) m.add(GP.ls.mult(2));
-        if (ti.s && ti.s.magSq() > 65 * 65) m.add(ti.s.copy().mult(0.025));
-        if (GP.dp) m.add(GP.dp.mult(2));
-        m.set(
-          Math.min(Math.max(m.x, -1), 1),
-          Math.min(Math.max(m.y, -1), 1)
-        );
-        m.mult(dt * speed);
+        let m = getmovementinput();
+        m.mult(speed);
         if (bcoll(this.pos.copy().add(m.x, 0))) this.pos.add(m.x, 0);
         if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
       }
@@ -372,6 +362,7 @@ class Flame extends Entity {
     this.size = data.size || size;
     this.dissize = this.size;
     this.svel = this.vel * 1.2;
+    this.livetime = Date.now() + 15e3;
   }
 
   draw() {
@@ -430,6 +421,7 @@ class Flame extends Entity {
         this.svel *= 1 - x * .025;
       }
     });
+    if (this.livetime < Date.now()) this.svel -= dt * 0.004;
     if (this.size <= 1 || this.size > 600) this.remove();
     this.checkup();
   }
@@ -475,7 +467,7 @@ class Bomb extends Entity {
 
   draw() {
     push();
-    translate(this.pos);
+    translate(this.dispos);
     let x = Date.now() - this.countdown;
     let s = x * .01 + size * .5;
     image(tex((x % 1e3 > 500 ? 'white' : '') + 'bomb'),
@@ -537,17 +529,31 @@ class Explosion extends Entity {
     this.size = data.size || size;
     this.force = data.force || 8;
     this.fade = 0;
+    this.dissize = this.size;
+    this.disfade = this.fade;
+  }
+
+  tickall() {
+    if (this.OWNER != username) {
+      this.dispos.add(this.pos.copy().sub(this.dispos).mult(smoothfactor));
+      this.dissize += (this.size - this.dissize) * smoothfactor;
+      this.disfade += (this.fade - this.disfade) * smoothfactor;
+    } else {
+      this.dispos.set(this.pos);
+      this.dissize = this.size;
+      this.disfade = this.fade;
+    }
   }
 
   draw() {
     push();
-    translate(this.pos);
-    scale(Math.sqrt(this.size));
+    translate(this.dispos);
+    scale(Math.sqrt(this.dissize));
     // fill(255);
     // noStroke();
     // rect(-4, -4, 8, 8);
-    fill(255, 0, 0, (1 - this.fade) * 255);
-    stroke(255, 128, 0, (1 - this.fade) * 255);
+    fill(255, 0, 0, (1 - this.disfade) * 255);
+    stroke(255, 128, 0, (1 - this.disfade) * 255);
     strokeWeight(2);
     rect(-4, -4, 8, 8);
     pop();
