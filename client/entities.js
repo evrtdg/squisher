@@ -111,6 +111,7 @@ class Squish extends Entity {
           ((keys.s || false) - (keys.w || false)),
         );
         if (GP.ls && GP.ls.magSq() > 0.1) m.add(GP.ls.mult(2));
+        if (ti.s && ti.s.magSq() > 65 * 65) m.add(ti.s.copy().mult(0.025));
         if (GP.dp) m.add(GP.dp.mult(2));
         m.set(
           Math.min(Math.max(m.x, -1), 1),

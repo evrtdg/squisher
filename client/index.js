@@ -327,21 +327,42 @@ function updategamepad() {
 window.oncontextmenu = e => e.preventDefault();
 
 
-if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) alert("safari touch controls dont work");
+if (/^((?!chrome|android).)*safari/i.test(navigator.userAgent)) alert("Notice: Safari touch controls do not work");
 let starttouch = {};
 let touch = {};
+let ti = {};
 function updatetouch() {
-  for (t of touches) {
+  if (touches) ti.yeah = true;
+  for (let t of touches) {
     if (!touch[t.id]) {
-      starttouch[t.id] = touch[t.id] = {
-        x: t.x, y: t.y,
-        type: t.x < innerWidth / 2
-      };
+      starttouch[t.id] = createVector(t.x, t.y);
+      if (t.x < innerWidth / 2 && !ti.s) {
+        ti.si = t.id;
+        ti.s = createVector(0, 0);
+      }
+      if (hbox(createVector(innerWidth - 100, innerHeight - 200),
+        starttouch[t.id], 70)) ti.a = t.id + 1;
+      if (hbox(createVector(innerWidth - 200, innerHeight - 100),
+        starttouch[t.id], 55)) ti.b = t.id + 1;
+      if (hbox(createVector(innerWidth - 100, innerHeight - 300),
+        starttouch[t.id], 35)) {
+        holding = ++holding % inventory.length;
+        updateinv();
+      }
+    }
+    touch[t.id] = createVector(t.x, t.y);
+    if (ti.s) {
+      ti.s.set(touch[ti.si].copy().sub(starttouch[ti.si]));
+      if (player && menu == "game" && (ti.s.magSq() < 130 * 130)) player.rotation = ti.s.heading();
+      ti.s.limit(100);
     }
   }
-  for (id in touch) {
+  for (let id in touch) {
     if (!touches.find(t => t.id == id)) {
       delete touch[id];
+      if (id == ti.si) ti.s = null;
+      if (id == ti.a - 1) ti.a = null;
+      if (id == ti.b - 1) ti.b = null;
     }
   }
 }

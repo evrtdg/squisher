@@ -71,6 +71,7 @@ async function initgame() {
     y: 0,
     name: username
   });
+  if (mp) users[username] = player;
   inventory = [];
   holding = 0;
   points = 0;
@@ -92,11 +93,11 @@ function tickgame() {
     if (!x.removed && x.OWNER == username) x.tick();
     if (x.tickall) x.tickall();
   });
-  if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e || GP.a || GP.zr) {
+  if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e || GP.a || GP.zr || ti.a) {
     useitem();
     firstshot = false;
   } else firstshot = true;
-  if (keys.mouseright || keys.r || GP.b || GP.zl) {
+  if (keys.mouseright || keys.r || GP.b || GP.zl || ti.b) {
     altitem();
     firstalt = false;
   } else firstalt = true;
@@ -172,6 +173,39 @@ function drawhud() {
       text(x[1], innerWidth - 14, 60 + 60 * i);
     }
   });
+  if (ti.yeah) {
+    push();
+    stroke(0);
+    strokeWeight(2);
+    if (ti.s) {
+      let s = starttouch[ti.si];
+      let j = starttouch[ti.si].copy().add(ti.s);
+      fill(255, 128);
+      circle(s.x, s.y, 250);
+      if (ti.s.magSq() < 50 * 50) noFill();
+      circle(s.x, s.y, 100);
+      fill(255, 128);
+      line(s.x, s.y, j.x, j.y);
+      circle(j.x, j.y, 50);
+    }
+    rectMode(CENTER);
+    fill(ti.a ? 200 : 255, 128);
+    rect(innerWidth - 100, innerHeight - 200, 75);
+    fill(ti.b ? 200 : 255, 128);
+    rect(innerWidth - 200, innerHeight - 100, 55);
+    fill(255, 128);
+    rect(innerWidth - 100, innerHeight - 300, 35);
+    pop();
+  }
+}
+
+function drawpause() {
+  push();
+  fill(255, 0, 0);
+  stroke(0, 0, 0);
+  strokeWeight(2);
+  rect(50, 50, 100, 100);
+  pop();
 }
 
 function makebullet(damage, spread = 0, amount = 1) {
@@ -265,13 +299,4 @@ function cheats(x) {
   ammo = 1000;
   player.hp = 1000;
   player.onfire = 0;
-}
-
-function drawpause() {
-  push();
-  fill(255, 0, 0);
-  stroke(0, 0, 0);
-  strokeWeight(2);
-  rect(50, 50, 100, 100);
-  pop();
 }

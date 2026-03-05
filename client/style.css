@@ -8,6 +8,14 @@
   src: url('assets/prodsans.ttf');
 }
 
+html, body, canvas {
+  margin: 0;
+  padding: 0;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -78,7 +86,7 @@ button {
   transform: rotate(45deg);
 }
 
-.gphover {
+.gphover, button:hover {
   background: #ddd;
 }
 
