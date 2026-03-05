@@ -105,7 +105,7 @@ class Squish extends Entity {
         this.healto = Date.now() + healspeed;
         this.heal(1);
       }
-      if (!this.dead) {
+      if (!this.dead && menu != "pause") {
         let m = createVector(
           ((keys.d || false) - (keys.a || false)),
           ((keys.s || false) - (keys.w || false)),

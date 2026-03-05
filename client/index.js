@@ -122,7 +122,7 @@ function draw() {
     if (dt > pdps) {
       if (dt > 100) dt = 100;
       drawgame();
-      if (mp) tickgame();
+      if (mp && Object.keys(users).length > 1) tickgame();
       dt = dt % pdps;
     }
     mptick();
@@ -261,23 +261,23 @@ function updategamepad() {
   const gp = navigator.getGamepads()[0];
   if (!gp) return GP.yeah = false;
 
-  GP.b = gp.buttons[0].pressed;
-  GP.a = gp.buttons[1].pressed;
-  GP.y = gp.buttons[2].pressed;
-  GP.x = gp.buttons[3].pressed;
-  GP.l = gp.buttons[4].pressed;
-  GP.r = gp.buttons[5].pressed;
-  GP.zl = gp.buttons[6].pressed;
-  GP.zr = gp.buttons[7].pressed;
-  GP.menu = gp.buttons[8].pressed || gp.buttons[9].pressed;
-  GP.ma = gp.buttons[16].pressed;
-  GP.mb = gp.buttons[17].pressed || gp.buttons[10].pressed;
+  GP.b = gp.buttons[0]?.pressed;
+  GP.a = gp.buttons[1]?.pressed;
+  GP.y = gp.buttons[2]?.pressed;
+  GP.x = gp.buttons[3]?.pressed;
+  GP.l = gp.buttons[4]?.pressed;
+  GP.r = gp.buttons[5]?.pressed;
+  GP.zl = gp.buttons[6]?.pressed;
+  GP.zr = gp.buttons[7]?.pressed;
+  GP.menu = gp.buttons[8]?.pressed || gp.buttons[9]?.pressed;
+  GP.ma = gp.buttons[16]?.pressed;
+  GP.mb = gp.buttons[17]?.pressed || gp.buttons[10]?.pressed;
 
   GP.ls = createVector(gp.axes[0], gp.axes[1]);
   GP.rs = createVector(gp.axes[2], gp.axes[3]);
   GP.dp = createVector(
-    gp.buttons[15].pressed - gp.buttons[14].pressed,
-    gp.buttons[13].pressed - gp.buttons[12].pressed
+    gp.buttons[15]?.pressed - gp.buttons[14]?.pressed,
+    gp.buttons[13]?.pressed - gp.buttons[12]?.pressed
   );
   if (player && menu == "game" && GP.rs.magSq() > .1) player.rotation = GP.rs.heading();
 
