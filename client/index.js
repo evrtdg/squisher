@@ -98,7 +98,7 @@ function draw() {
   updatetouch();
   if (font) textFont(font);
   if (menu == 'menu') {
-    background(255);
+    background(245);
     fill(255, 0, 0);
     push();
     rect(20, 20, 20);
@@ -270,9 +270,10 @@ function updategamepad() {
   GP.r = gp.buttons[5]?.pressed;
   GP.zl = gp.buttons[6]?.pressed;
   GP.zr = gp.buttons[7]?.pressed;
-  GP.menu = gp.buttons[8]?.pressed || gp.buttons[9]?.pressed;
-  GP.ma = gp.buttons[16]?.pressed;
-  GP.mb = gp.buttons[17]?.pressed || gp.buttons[10]?.pressed;
+  GP.cx = gp.buttons[10]?.pressed;
+  GP.ca = gp.buttons[9]?.pressed;
+  GP.cb = gp.buttons[8]?.pressed;
+  GP.menu = (GP.ca || GP.cb) && !GP.cx;
 
   GP.ls = createVector(gp.axes[0], gp.axes[1]);
   GP.rs = createVector(gp.axes[2], gp.axes[3]);
@@ -300,7 +301,8 @@ function updategamepad() {
 
     if (player && player.dead) playerspawn();
 
-    if (key == "ma" && GP.mb) cheats();
+    if (key == "ca" && GP.cx) cheats();
+    if (key == "cb" && GP.cx) freecam();
   }
   // if ((GP.l || GP.r) && (keytimes.gpturn || 0) < Date.now() && menu == "game") {
   //   player.rotation += (GP.r - GP.l) * rotamt;
@@ -374,6 +376,11 @@ function updatetouch() {
       if (id == ti.b - 1) ti.b = null;
     }
   }
+}
+
+function freecam() {
+  camera = player?.pos.copy() || createVector(0, 0);
+  camera.freecam = true;
 }
 
 function getmovementinput() {

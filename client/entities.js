@@ -82,6 +82,7 @@ class Squish extends Entity {
     this.onfire = 0;
     this.name = data.name;
     this.healto = 0;
+    this.dash = 0;
   }
 
   tickall() {
@@ -105,9 +106,12 @@ class Squish extends Entity {
         this.healto = Date.now() + healspeed;
         this.heal(1);
       }
-      if (!this.dead && menu != "pause") {
+      if (!this.dead && menu != "pause" && !camera?.freecam) {
+        if (!((keys.z || GP.cx) && this.dash < 0)) this.dash -= dt;
         let m = getmovementinput();
-        m.mult(speed);
+        if (this.dash < -3e3 && (keys.z || GP.cx) && m.magSq() > 0.5) 
+          this.dash = 1e3;
+        m.mult(speed + Math.max(0, this.dash * .0003));
         if (bcoll(this.pos.copy().add(m.x, 0))) this.pos.add(m.x, 0);
         if (bcoll(this.pos.copy().add(0, m.y))) this.pos.add(0, m.y);
       }

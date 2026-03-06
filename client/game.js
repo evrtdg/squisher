@@ -46,7 +46,8 @@ let score = 0;
 
 async function initgame() {
   console.log("init", game);
-  noLoop();loop();
+  noLoop();
+  loop();
   if (player) player.remove();
   entities = {};
   loadstat = "connecting";
@@ -96,36 +97,41 @@ function tickgame() {
     if (!x.removed && x.OWNER == username) x.tick();
     if (x.tickall) x.tickall();
   });
-  if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e || GP.a || GP.zr || ti.a) {
-    useitem();
-    firstshot = false;
-  } else firstshot = true;
-  if (keys.mouseright || keys.r || GP.b || GP.zl || ti.b) {
-    altitem();
-    firstalt = false;
-  } else firstalt = true;
-  if (keys.arrowleft && Date.now() - keytimes.arrowleft >= kloop) {
-    keytimes.arrowleft = Date.now();
-    player.rotation -= rotamt;
-  }
-  if (keys.arrowright && Date.now() - keytimes.arrowright >= kloop) {
-    keytimes.arrowright = Date.now();
-    player.rotation += rotamt;
+  if (!player.dead && menu == "game") {
+    if (keys.p) freecam();
+    if (keys.arrowup || keys.mouseleft || keys[' '] || keys.e || 
+      GP.a || GP.zr || ti.a) {
+      if (camera?.freecam) camera = player.id;
+      else useitem();
+      firstshot = false;
+    } else firstshot = true;
+    if (keys.mouseright || keys.r || GP.b || GP.zl || ti.b) {
+      altitem();
+      firstalt = false;
+    } else firstalt = true;
+    if (keys.arrowleft && Date.now() - keytimes.arrowleft >= kloop) {
+      keytimes.arrowleft = Date.now();
+      player.rotation -= rotamt;
+    }
+    if (keys.arrowright && Date.now() - keytimes.arrowright >= kloop) {
+      keytimes.arrowright = Date.now();
+      player.rotation += rotamt;
+    }
   }
   if (game == 'classic') classictick();
   if (game == 'fight') fighttick();
 }
 
 function drawgame(ingame) {
-  background(255);
+  background(245);
   push();
   let cam = (camera?.constructor.name == 'String' ?
     entities[camera]?.dispos || entities[camera]?.pos : camera);
   if (!cam) {
     cam = camera = createVector(0, 0);
-    camera.freecam = true;
+    camera.broken = true;
   }
-  if (camera.freecam) camera.add(getmovementinput().mult(8));speed
+  if (camera.freecam) camera.add(getmovementinput().mult(1));
   cam = cam.copy().mult(-1).add(createVector(windowWidth, windowHeight).mult(.5));
   translate(cam);
   drawmap(ingame);
@@ -206,6 +212,7 @@ function drawhud() {
     if (!player?.dead) rect(innerWidth - 200, innerHeight - 100, 55);
     pop();
   }
+  if (camera.broken) text("Camera broken", innerWidth * .5, innerHeight * .5);
 }
 
 function drawpause() {
