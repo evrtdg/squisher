@@ -173,6 +173,7 @@ function playerspawn() {
   player.dead = false;
   player.hp = player.maxhp;
   player.holding = null;
+  player.onfire = 0;
   updateEntity(player.id, {
     dead: player.dead,
     hp: player.hp,
