@@ -125,6 +125,12 @@ function useitem() {
     });
     ammo -= 1.5;
   }
+  if (player.holding == 'medkit' && Date.now() - player.cooldown >= 100 && player.hp < player.maxhp + player.bonushp) {
+    player.cooldown = Date.now();
+    inventory[holding][1]--;
+    updateinv();
+    player.heal(5);
+  }
   if (Date.now() - player.cooldown >= 250 && firstshot) {
     let d = false;
     Object.values(entities).forEach(e => {
@@ -175,5 +181,14 @@ function altitem() {
     Object.values(entities).filter(f => hbox(f.pos, player.pos, Math.min(f.size, size * 12))).forEach(f =>
       f.svel -= Math.max(size * 12 - f.pos.copy().sub(this.pos).mag(), size * 4) * 0.00002 * dt);
     if (player.onfire > Date.now()) player.onfire -= dt * 2;
+  }
+  if (player.holding == 'medkit' && Date.now() - player.cooldown >= 75) {
+    let e = Object.values(entities).find(x => x != player && !x.dead &&
+      x.player && hbox(player.pos, x.pos, size * 3));
+    if (!e || e.hp >= e.maxhp + e.bonushp) return;
+    player.cooldown = Date.now();
+    inventory[holding][1]--;
+    updateinv();
+    e.heal(5);
   }
 }

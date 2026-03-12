@@ -276,6 +276,7 @@ class Squish extends Entity {
   }
 
   heal(x) {
+    if (this.hp >= this.maxhp + this.bonushp) return x;
     let r = this.hp;
     this.hp += x;
     if (this.hp > this.maxhp + this.bonushp) this.hp = this.maxhp + this.bonushp;
@@ -414,8 +415,10 @@ class Flame extends Entity {
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 4)) && e.class == 'squish') {
         let x = Math.max(0, (e.onfire || 0) - Date.now());
         x = x * .4 + dt * Math.max(this.vel * this.vel * 4, size) * .8;
-        e.onfire = Math.min(x, 1e3) * 3 + Date.now();
-        if (mp) updateEntity(e.id, { onfire: e.onfire });
+        if (player == e || !e.player || (e.player && friendlyfire) || !mp){
+          e.onfire = Math.min(x, 1e3) * 3 + Date.now();
+          if (mp && !e.dead) updateEntity(e.id, { onfire: e.onfire });
+        }
         this.vel = Math.max(this.vel - .00006 * x, 0);
       }
       if (hbox(this.pos, e.pos, Math.min(this.size, size * 8))) {
