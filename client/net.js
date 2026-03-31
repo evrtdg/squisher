@@ -48,7 +48,7 @@ function leaveGame() {
 }
 
 function send(data) {
-  if (!ws || ws.readyState != ws.OPEN) 
+  if (!ws || ws.readyState != ws.OPEN)
     return console.error("cant send message cause connection dead");
   ws.send(JSON.stringify(data));
   if (DEBUG) console.log(">", data);
@@ -176,3 +176,13 @@ function sendPacket() {
   }
   clearPacket();
 }
+
+
+// fuckass gamplo integration
+window.addEventListener("message", e => {
+  if (e.origin !== "https://games.gamplo.com" || !e.data) return;
+  let u = e.data.player.displayName || e.data.player.username;
+  localStorage.username = u;
+  if (menuuser) menuuser.value(u);
+  if (menu != "game" && menu != "pause") username = u;
+});
