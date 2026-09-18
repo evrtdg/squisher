@@ -64,16 +64,18 @@ function play(n, v = .5) {
 let songs = ["jets_average", "ebb_and_flow", "tread_carefully"];
 let playing = null;
 let domusic = 0;
+let song = 0;
 async function music() {
-  let song = 0;
   let boog = 0;
   domusic = 1;
-  if (playing) playing.pause();
   while (domusic) {
+    if (playing) playing.stop();
     if (!sounds[songs[song]]) await new Promise(y => {
       sounds[songs[song]] = loadSound('assets/sounds/' + songs[song] + '.mp3', y);
     });
-    let s = play(songs[song], 0.3);
+    let s;
+    s = play(songs[song], 0.3);
+    song = (song + 1) % songs.length;
     if (menu == "pause" && boog) s.pause();
     boog = 1;
     playing = s;
@@ -85,7 +87,6 @@ async function music() {
         setTimeout(y, 500);
       });
     });
-    song = (song + 1) % songs.length;
   }
 }
 
@@ -190,7 +191,7 @@ async function switchmenu(m, g) {
     document.querySelector("#pause").classList.remove("hidden");
   }
   if (menu == "game") {
-    if (playing && domusic) playing.play();
+    if (playing && domusic && playing._paused) playing.play();
     if (GP.yeah) {
       GPcursor = false;
       GPcursorPos = createVector(innerWidth / 2, innerHeight / 2);
