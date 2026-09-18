@@ -61,7 +61,7 @@ function play(n, v = .5) {
   return s;
 }
 
-let songs = ["tread_carefully", "jets_average"];
+let songs = ["jets_average", "ebb_and_flow", "tread_carefully"];
 let playing = null;
 let domusic = 0;
 async function music() {
