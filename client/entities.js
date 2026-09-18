@@ -155,27 +155,25 @@ class Squish extends Entity {
     translate(this.dispos);
     let type = this.type;
     if (this.player && this != player) type = "team";
-    // Remake team set. Player #97E66C, Player Outline for FFA: #5fa837, Team Red #FF0000, Outline #AA0000, Team Blue #0000FF, Outline #2222AA. Outlines apply to player, but player has player color
-    // Furthermore: Team Yellow, team Green, etc
     fill({
       'player': '#97E66C',
       'basic': '#ff0000',
-      'boss': '#999999',
+      'boss': '#B3B3B3',
       'super': '#ffe815',
-      'hunter': '#09FFEC',
-      'omega': '#FC10FA',
-      'team': '#4444ff', // teammate
-      'opp': '#ff4444', // opposing team
+      'hunter': '#09EEDC',
+      'omega': '#fb48f8',
+      'team': '#5555ee', // teammate
+      'opp': '#ee5555', // opposing team (this looks too much like basic!!)
     }[type]);
     stroke({
       'player': '#805909',
       'basic': '#aa2200',
-      'boss': '#8680a6',
-      'super': '#bdac19',
-      'hunter': '#06CEFF',
-      'omega': '#b111ae',
-      'team': '#2222aa', // teammate
-      'opp': '#aa2222', // opposing team
+      'boss': '#888090',
+      'super': '#b2a428',
+      'hunter': '#24c3c6',
+      'omega': '#b837b6',
+      'team': '#3333cc', // teammate
+      'opp': '#cc3333', // opposing team
     }[type]);
     strokeWeight(8);
     rect(size * -.5, size * -.5, size, this.dead ? size * .5 : size);
