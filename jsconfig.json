@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "types": ["p5/global"],
+    "types": ["p5js/global"],
     "target": "es6"
   },
   "include": ["client/*"]
