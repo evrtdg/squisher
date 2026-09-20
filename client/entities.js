@@ -74,7 +74,11 @@ class Squish extends Entity {
     }
     this.hp = {
       player: 100,
-      basic: 25
+      basic: 25,
+      boss: 150,
+      super: 500,
+      hunter: 1000,
+      omega: 2500, // Nerfed because the initial numbers in the doc is too high
     }[type];
     this.maxhp = this.hp;
     this.bonushp = this.player ? 50 : 0;
@@ -123,7 +127,11 @@ class Squish extends Entity {
       if (Date.now() - this.cooldown > 100) {
         this.cooldown = Date.now();
         touching.damage({
-          basic: Math.floor(Math.random() * 4) + 2
+          basic: Math.floor(Math.random() * 4) + 2,
+          boss: Math.floor(Math.random() * 6) + 4,
+          super: Math.floor(Math.random() * 8) + 6,
+          hunter: Math.floor(Math.random() * 10) + 8,
+          omega: Math.floor(Math.random() * 12) + 10
         }[this.type], this.id);
       }
     } else {
@@ -163,7 +171,7 @@ class Squish extends Entity {
       'hunter': '#09EEDC',
       'omega': '#fb48f8',
       'team': '#5555ee', // teammate
-      'opp': '#ee5555', // opposing team (this looks too much like basic!!)
+      'opp': '#b6007f', // opposing team (this looks too much like basic!!)
     }[type]);
     stroke({
       'player': '#805909',
@@ -241,8 +249,16 @@ class Squish extends Entity {
 
         let a = Math.floor(Math.random() * ({
           basic: 15, //ammo max
+          boss: 25,
+          super: 150,
+          hunter: 250,
+          omega: 400,
         }[this.type] + 1)) - Math.floor(Math.random() * ({
           basic: 5, //ammo sub
+          boss: 15,
+          super: 25,
+          hunter: 150,
+          omega: 250,
         }[this.type] + 1));
         if (a > 0) createEntity({
           class: 'item',
@@ -255,8 +271,16 @@ class Squish extends Entity {
 
         let h = Math.floor(Math.random() * ({
           basic: 15, //hp max
+          boss: 25,
+          super: 35,
+          hunter: 45,
+          omega: 55,
         }[this.type] + 1)) - Math.floor(Math.random() * ({
           basic: 5, //hp sub
+          boss: 15,
+          super: 25,
+          hunter: 35,
+          omega: 45
         }[this.type] + 1));
         if (h > 0) createEntity({
           class: 'item',
@@ -446,7 +470,23 @@ class Flame extends Entity {
   }
 }
 classes.flame = Flame;
+class Landmine extends Entity {
+  constructor(id,type,x,y,data={}) {
+    super(id,type,x,y,data);
+    this.class = "landmine";
+    this.from = data.from || null;
+    // this.distanceFrom = distance(team,position);
+    this.activationDelay = Date.now();
+    // this.delay = Date.now();
+    // Still have not put the entities being close (distanceFrom) activations
+    this.rot = data.rot || 0;
+  }
 
+  tick() {
+    // IDK what to put here
+    this.explosionLandmine(this);
+  }
+}
 class Bomb extends Entity {
   constructor(id, type, x, y, data = {}) {
     super(id, type, x, y, data);
@@ -603,3 +643,17 @@ class Explosion extends Entity {
   }
 }
 classes.explosion = Explosion;
+classes.explosionLandmine = landmineExplosion;
+
+/*
+explodeLandmine() {
+    createEntity({
+      class: "explosion",
+      id: genid(),
+      x: this.pos.x,
+      y: this.pos.y,
+      from: this.from,
+    });
+    this.remove();
+  }
+    */
