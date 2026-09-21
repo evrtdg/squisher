@@ -313,6 +313,7 @@ function cheats() {
   give('goldenshot');
   give('flamethrower');
   give('bomb', 100);
+  give('landmine', 100);
   give('medkit', 100);
   powerammo = true;
   pierceammo = true;

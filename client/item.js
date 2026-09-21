@@ -39,6 +39,10 @@ class Item extends Entity {
 }
 classes.item = Item;
 
+const items = {
+  
+};
+
 function give(type, amount = 1) {
   let y = false;
   inventory.forEach(x => {
@@ -74,6 +78,27 @@ function useitem() {
       from: player.id,
       rot: player.rotation + Math.random() * .2 - .1,
       vel: size * .075
+    });
+  }
+  if (player.holding == 'landmine' && inventory[holding][1] > 0 &&
+    Date.now() - player.cooldown >= 100 && firstshot) {
+    let v = createVector(size * 2, 0).setHeading(player.rotation).add(player.pos);
+    let g = false;
+    Object.values(entities).forEach(e => {
+      if (hbox(v, e.pos, size * 2.5)) {
+        if (e.class == "landmine") g = true;
+      }
+    });
+    if (g) return;
+    player.cooldown = Date.now();
+    inventory[holding][1]--;
+    updateinv();
+    createEntity({
+      class: 'landmine',
+      id: genid(),
+      x: v.x,
+      y: v.y,
+      from: player.id,
     });
   }
   // if (player.holding == 'ferret' && inventory[holding][1] > 0 &&

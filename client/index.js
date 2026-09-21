@@ -41,6 +41,8 @@ function setup() {
   textures.ammo = loadImage('assets/ammo.png');
   textures.hp = loadImage('assets/hp.png');
   textures.medkit = loadImage('assets/medkit.png');
+  textures.landmine = loadImage('assets/landmine.svg');
+  textures.landmineactive = loadImage('assets/landmineactive.svg');
   textures.missing = loadImage('assets/missing.png');
   sounds.missing = loadSound('assets/sounds/missing.mp3');
   sounds.start = loadSound('assets/sounds/start.mp3');
